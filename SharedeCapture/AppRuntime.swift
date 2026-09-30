@@ -14,6 +14,8 @@ final class AppRuntime {
     let shortcuts = ShortcutSettings()
     let drive = GoogleDriveService()
     let navigation = MainNavigation()
+    let quitter = AppQuitter()
+    let cleanup = CleanupModel()
     private let quickAccess = QuickAccessController()
     private let toast = ToastController()
     private var statusMenu: StatusMenuController?
@@ -66,6 +68,8 @@ final class AppRuntime {
                     .environmentObject(shortcuts)
                     .environmentObject(drive)
                     .environmentObject(navigation)
+                    .environmentObject(quitter)
+                    .environmentObject(cleanup)
                     .preferredColorScheme(.dark)
             )
             mainCloseObserver = NotificationCenter.default.addObserver(
@@ -131,6 +135,12 @@ final class AppRuntime {
     func closeEditor() {
         editorWindow?.orderOut(nil)
         updateActivationPolicy()
+    }
+
+    func showCleanup(scan: Bool) {
+        navigation.page = .cleanup
+        showMainWindow()
+        if scan { cleanup.scan() }
     }
 
     func showSettings() {

@@ -9,12 +9,13 @@ private enum HomeStyle {
 }
 
 enum HomePage: Hashable {
-    case capture, recent, settings(SettingsPage)
+    case capture, quitApps, cleanup, settings(SettingsPage)
 
     var title: String {
         switch self {
         case .capture: L10n.tr("Chụp ảnh")
-        case .recent: L10n.tr("Ảnh gần đây")
+        case .quitApps: L10n.tr("Thoát ứng dụng")
+        case .cleanup: L10n.tr("Dọn dẹp")
         case .settings(let page): page.title
         }
     }
@@ -22,7 +23,8 @@ enum HomePage: Hashable {
     var symbol: String {
         switch self {
         case .capture: "viewfinder"
-        case .recent: "clock.arrow.circlepath"
+        case .quitApps: "power"
+        case .cleanup: "sparkles"
         case .settings(let page): page.symbol
         }
     }
@@ -64,7 +66,8 @@ struct ContentView: View {
                         Group {
                             switch page {
                             case .capture: capturePage
-                            case .recent: recentPage
+                            case .quitApps: QuitAppsView(accent: HomeStyle.accent, muted: HomeStyle.muted)
+                            case .cleanup: CleanupView(accent: HomeStyle.accent, muted: HomeStyle.muted)
                             case .settings: EmptyView()
                             }
                         }
@@ -105,18 +108,13 @@ struct ContentView: View {
                 .padding(.horizontal, 19)
                 .padding(.bottom, 10)
 
-            ForEach([HomePage.capture, .recent], id: \.self) { item in
+            ForEach([HomePage.capture, .quitApps, .cleanup], id: \.self) { item in
                 Button { navigation.page = item } label: {
                     HStack(spacing: 11) {
                         Image(systemName: item.symbol)
                             .frame(width: 18)
                         Text(item.title)
                         Spacer(minLength: 0)
-                        if item == .recent && !state.recent.isEmpty {
-                            Text("\(state.recent.count)")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(HomeStyle.muted)
-                        }
                     }
                     .font(.system(size: 13, weight: page == item ? .semibold : .medium))
                     .foregroundStyle(page == item ? .white : HomeStyle.muted)
@@ -164,19 +162,32 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(page.title)
                     .font(.system(size: 23, weight: .bold))
-                Text(page == .capture ? L10n.tr("Chọn một thao tác để bắt đầu") : L10n.tr("Mở lại hoặc sao chép ảnh đã chụp"))
+                Text(subtitle)
                     .font(.system(size: 12))
                     .foregroundStyle(HomeStyle.muted)
             }
             Spacer()
-            Button { AppRuntime.shared.openImage() } label: {
-                Label(L10n.tr("Mở ảnh…"), systemImage: "folder")
-                    .font(.system(size: 12, weight: .semibold))
+            if page == .quitApps {
+                QuitAppsHeaderActions()
+            } else if page == .capture {
+                Button { AppRuntime.shared.openImage() } label: {
+                    Label(L10n.tr("Mở ảnh…"), systemImage: "folder")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
         }
         .padding(.horizontal, 28)
         .frame(height: 85)
+    }
+
+    private var subtitle: String {
+        switch page {
+        case .capture: L10n.tr("Chọn một thao tác để bắt đầu")
+        case .quitApps: L10n.tr("Đóng nhanh các ứng dụng đang mở mà không cần khởi động lại máy")
+        case .cleanup: L10n.tr("Quét và dọn các file tạm để lấy lại dung lượng ổ đĩa")
+        case .settings: ""
+        }
     }
 
     private var capturePage: some View {
@@ -235,23 +246,41 @@ struct ContentView: View {
             .font(.system(size: 11))
             .foregroundStyle(HomeStyle.muted)
             .padding(.top, 20)
+
+            recentSection
+                .padding(.top, 36)
         }
     }
 
-    private var recentPage: some View {
+    private var recentSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if state.recent.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 32, weight: .ultraLight))
-                        .foregroundStyle(HomeStyle.accent)
-                    Text(L10n.tr("Chưa có ảnh gần đây"))
-                        .font(.system(size: 17, weight: .semibold))
-                    Text(L10n.tr("Ảnh vừa chụp sẽ xuất hiện ở đây trong phiên làm việc này."))
-                        .font(.system(size: 12))
+            HStack {
+                Text(L10n.tr("ẢNH GẦN ĐÂY"))
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(HomeStyle.muted)
+                Spacer()
+                if !state.recent.isEmpty {
+                    Text("\(state.recent.count)")
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(HomeStyle.muted)
                 }
-                .padding(.top, 50)
+            }
+            .padding(.bottom, 4)
+            if state.recent.isEmpty {
+                HStack(spacing: 12) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(HomeStyle.accent)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(L10n.tr("Chưa có ảnh gần đây"))
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(L10n.tr("Ảnh vừa chụp sẽ xuất hiện ở đây trong phiên làm việc này."))
+                            .font(.system(size: 11))
+                            .foregroundStyle(HomeStyle.muted)
+                    }
+                }
+                .padding(.vertical, 12)
             } else {
                 ForEach(state.recent) { item in
                     HStack(spacing: 14) {

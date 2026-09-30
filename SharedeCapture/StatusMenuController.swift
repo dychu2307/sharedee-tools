@@ -10,8 +10,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.runtime = runtime
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
-        let icon = NSImage(systemSymbolName: "viewfinder", accessibilityDescription: "Sharedee Tools")
+        let icon = NSImage(named: "MenuBarIcon")
+        icon?.size = NSSize(width: 18, height: 18)
         icon?.isTemplate = true
+        icon?.accessibilityDescription = "Sharedee Tools"
         statusItem.button?.image = icon
         statusItem.button?.toolTip = "Sharedee Tools"
         menu.autoenablesItems = false
@@ -27,15 +29,17 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private func rebuildMenu() {
         menu.removeAllItems()
         let state = runtime.state
-        add("Chụp vùng chọn", action: #selector(captureArea), enabled: !state.isCapturing)
-        add("Chụp cửa sổ", action: #selector(captureWindow), enabled: !state.isCapturing)
-        add("Chụp toàn màn hình", action: #selector(captureFullScreen), enabled: !state.isCapturing)
-        add("Chụp cuộn", action: #selector(captureScrolling), enabled: !state.isCapturing)
-        add("Chụp và sao chép chữ", action: #selector(captureText), enabled: !state.isCapturing)
+        add(L10n.tr("Mở Sharedee Tools"), action: #selector(showMainWindow))
         menu.addItem(.separator())
-        add("Mở ảnh…", action: #selector(openImage))
-        add("Chỉnh sửa ảnh gần nhất", action: #selector(showEditor), enabled: state.image != nil)
-        add("Sao chép ảnh gần nhất", action: #selector(copyImage), enabled: state.image != nil)
+        add(L10n.tr("Chụp vùng chọn"), action: #selector(captureArea), enabled: !state.isCapturing)
+        add(L10n.tr("Chụp cửa sổ"), action: #selector(captureWindow), enabled: !state.isCapturing)
+        add(L10n.tr("Chụp toàn màn hình"), action: #selector(captureFullScreen), enabled: !state.isCapturing)
+        add(L10n.tr("Chụp cuộn"), action: #selector(captureScrolling), enabled: !state.isCapturing)
+        add(L10n.tr("Chụp và sao chép chữ"), action: #selector(captureText), enabled: !state.isCapturing)
+        menu.addItem(.separator())
+        add(L10n.tr("Mở ảnh…"), action: #selector(openImage))
+        add(L10n.tr("Chỉnh sửa ảnh gần nhất"), action: #selector(showEditor), enabled: state.image != nil)
+        add(L10n.tr("Sao chép ảnh gần nhất"), action: #selector(copyImage), enabled: state.image != nil)
         if !state.recent.isEmpty {
             let recentMenu = NSMenu()
             for (index, capture) in state.recent.enumerated() {
@@ -47,16 +51,17 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
                 item.tag = index
                 recentMenu.addItem(item)
             }
-            let recentItem = NSMenuItem(title: "Ảnh vừa chụp", action: nil, keyEquivalent: "")
+            let recentItem = NSMenuItem(title: L10n.tr("Ảnh vừa chụp"), action: nil, keyEquivalent: "")
             recentItem.submenu = recentMenu
             menu.addItem(recentItem)
         }
         menu.addItem(.separator())
-        add("Cài đặt…", action: #selector(showSettings))
+        add(L10n.tr("Cài đặt…"), action: #selector(showSettings))
+        add(L10n.tr("Giới thiệu Sharedee Tools"), action: #selector(showAbout))
         let status = NSMenuItem(title: state.status, action: nil, keyEquivalent: "")
         status.isEnabled = false
         menu.addItem(status)
-        add("Thoát Sharedee Tools", action: #selector(quit))
+        add(L10n.tr("Thoát Sharedee Tools"), action: #selector(quit))
     }
 
     private func add(_ title: String, action: Selector, enabled: Bool = true) {
@@ -75,6 +80,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     @objc private func showEditor() { runtime.showEditor() }
     @objc private func copyImage() { runtime.state.copyImage() }
     @objc private func showSettings() { runtime.showSettings() }
+    @objc private func showMainWindow() { runtime.showMainWindow() }
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(nil)
+    }
+
     @objc private func quit() { NSApp.terminate(nil) }
 
     @objc private func openRecent(_ item: NSMenuItem) {

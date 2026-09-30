@@ -8,16 +8,16 @@ enum EditorTool: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .select: "Chọn"
-        case .pen: "Bút vẽ"
-        case .arrow: "Mũi tên"
-        case .rectangle: "Hình chữ nhật"
-        case .ellipse: "Hình elip"
-        case .highlight: "Tô sáng"
-        case .blur: "Làm mờ"
-        case .redact: "Che kín"
-        case .text: "Chữ"
-        case .crop: "Cắt ảnh"
+        case .select: L10n.tr("Chọn")
+        case .pen: L10n.tr("Bút vẽ")
+        case .arrow: L10n.tr("Mũi tên")
+        case .rectangle: L10n.tr("Hình chữ nhật")
+        case .ellipse: L10n.tr("Hình elip")
+        case .highlight: L10n.tr("Tô sáng")
+        case .blur: L10n.tr("Làm mờ")
+        case .redact: L10n.tr("Che kín")
+        case .text: L10n.tr("Chữ")
+        case .crop: L10n.tr("Cắt ảnh")
         }
     }
 
@@ -43,7 +43,7 @@ struct Annotation: Identifiable {
     var points: [CGPoint]
     var color: NSColor
     var lineWidth: CGFloat
-    var text = "Nhập chữ"
+    var text = L10n.tr("Nhập chữ")
 
     var bounds: CGRect {
         guard let first = points.first else { return .zero }

@@ -7,17 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04DAAD8FE6687D3E97C88F8A /* ScrollingCaptureSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5781B3E8D0B67CE690BCB087 /* ScrollingCaptureSession.swift */; };
 		06CC9B4C5A809F59AC23EA06 /* ScrollingCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C22508AC8383498CEDD8F6AB /* ScrollingCaptureTests.swift */; };
+		0A3BC1BD3211CDC4E81C4655 /* RegionCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D9982428CBBF5E7CC2B9F42 /* RegionCapturer.swift */; };
 		0D756F6867961AC896D10EB6 /* ShortcutSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0630087F4D579C06FB75E422 /* ShortcutSettings.swift */; };
 		0F9CE79140E9C589CC8DA843 /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7ADA4031BF5133416EA3DFD /* StatusMenuController.swift */; };
+		1857AA9592CE88D9CDADF02D /* ScrollStitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDADEFA5B6C188DF3E969C26 /* ScrollStitcher.swift */; };
 		1B28DE970AA413E519DE6F3D /* CaptureState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5229384FBC2735D9F3540B0 /* CaptureState.swift */; };
+		287C55DCA69374D0BF726B7C /* LiveTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65B90B181DF5749D2B6EAED5 /* LiveTextView.swift */; };
+		43BB0E1248C375A01812024A /* AppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92FD35777E5C82BE684213D8 /* AppInfo.swift */; };
+		4CBBF6E3C4D01A3D48C2DCA9 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5541BD523E3239EE5AFABEB1 /* Localization.swift */; };
 		5D03ECD1F09B6BA9A7A094E9 /* SharedeCaptureApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFD547E429FDEA36F39B03E8 /* SharedeCaptureApp.swift */; };
+		7F6BCD416693F66B1FAB574B /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7011CC68763E496F059C97B0 /* GoogleDriveService.swift */; };
 		84D58F718ACDE57930D8E5E7 /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342E255BD2658C27FB6DA401 /* AnnotationTests.swift */; };
 		936E7F45A851682AB7C8BC04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BED30380E579B0E458DD860 /* SettingsView.swift */; };
 		937132C98A9F7E2400A6E0D6 /* QuickAccessController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4773549D824CDF2824EE8125 /* QuickAccessController.swift */; };
+		9CAED4619625AC37AE2DF985 /* GoogleDriveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4EAA87CBAE6CB5B9F1279F /* GoogleDriveTests.swift */; };
+		A21DE01F7C75F9893AFBC68C /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DB8261FA6D8097470B5A1D1A /* InfoPlist.strings */; };
 		A6488D55A565AD58324D267C /* Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECF6F7B2E1AE0D49000CD85 /* Annotation.swift */; };
 		A849AA4D63A74DDCAB9E0916 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC4432ACA98AB8CD83929BC /* ScreenshotService.swift */; };
+		B0079FC44C5A16895F0E800C /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C9F73BB3F104F2BC8B9CCD /* LaunchAtLogin.swift */; };
+		BE5A8E99D908E37D15B94F21 /* CompactEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C3B1BC7AA09AE5AAE30924 /* CompactEditorView.swift */; };
 		CC95EA7682A13A1151DE55CD /* ScrollingCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF08508668DC515A03E9BBAE /* ScrollingCaptureService.swift */; };
+		D70EEAD15DF19E6A6B20597D /* ToastController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F884BA7E377C4D4D3BB4F3 /* ToastController.swift */; };
+		D8255234B39327C81FD1D02C /* TextRecognizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA985572751AA0F3099E357B /* TextRecognizerTests.swift */; };
+		DFB3E73425F25873F3A7BA31 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EB3D5148D6081699DF6F052 /* TextRecognizer.swift */; };
 		E726F67C1FA756DDB1BA7F92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E53DC5AEDE41F1AAAD66A1AB /* Assets.xcassets */; };
 		F682370B83B7B11BFB1C911D /* EditorCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = B16FE4A15F9EBAABE4D24721 /* EditorCanvas.swift */; };
 		F77C690A3FB258F5CA5D928E /* QuickAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F22142436BF63E088D79D23 /* QuickAccessTests.swift */; };
@@ -37,22 +51,36 @@
 
 /* Begin PBXFileReference section */
 		0630087F4D579C06FB75E422 /* ShortcutSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutSettings.swift; sourceTree = "<group>"; };
+		09C9F73BB3F104F2BC8B9CCD /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		0ECF6F7B2E1AE0D49000CD85 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		0FC4432ACA98AB8CD83929BC /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
+		29C3B1BC7AA09AE5AAE30924 /* CompactEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactEditorView.swift; sourceTree = "<group>"; };
 		342E255BD2658C27FB6DA401 /* AnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTests.swift; sourceTree = "<group>"; };
+		3A4EAA87CBAE6CB5B9F1279F /* GoogleDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveTests.swift; sourceTree = "<group>"; };
 		3F22142436BF63E088D79D23 /* QuickAccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAccessTests.swift; sourceTree = "<group>"; };
 		4773549D824CDF2824EE8125 /* QuickAccessController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAccessController.swift; sourceTree = "<group>"; };
+		5541BD523E3239EE5AFABEB1 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		5781B3E8D0B67CE690BCB087 /* ScrollingCaptureSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCaptureSession.swift; sourceTree = "<group>"; };
 		5BED30380E579B0E458DD860 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5FD3DC67EFAD8CDFBCC60197 /* SharedeCaptureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SharedeCaptureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		65B90B181DF5749D2B6EAED5 /* LiveTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTextView.swift; sourceTree = "<group>"; };
+		7011CC68763E496F059C97B0 /* GoogleDriveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveService.swift; sourceTree = "<group>"; };
+		8EB3D5148D6081699DF6F052 /* TextRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
+		92FD35777E5C82BE684213D8 /* AppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfo.swift; sourceTree = "<group>"; };
 		9B10CAAB6A1FAF26FA32058D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9D9982428CBBF5E7CC2B9F42 /* RegionCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionCapturer.swift; sourceTree = "<group>"; };
 		B16FE4A15F9EBAABE4D24721 /* EditorCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCanvas.swift; sourceTree = "<group>"; };
 		B5229384FBC2735D9F3540B0 /* CaptureState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureState.swift; sourceTree = "<group>"; };
 		C22508AC8383498CEDD8F6AB /* ScrollingCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCaptureTests.swift; sourceTree = "<group>"; };
 		D7ADA4031BF5133416EA3DFD /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
+		DB8261FA6D8097470B5A1D1A /* InfoPlist.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = vi.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		DDADEFA5B6C188DF3E969C26 /* ScrollStitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollStitcher.swift; sourceTree = "<group>"; };
 		DFD547E429FDEA36F39B03E8 /* SharedeCaptureApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedeCaptureApp.swift; sourceTree = "<group>"; };
 		E1EDECCDB8E82412DDBD9C90 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		E2F884BA7E377C4D4D3BB4F3 /* ToastController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastController.swift; sourceTree = "<group>"; };
 		E3D7A9C8191BD3528FE72A0F /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
 		E53DC5AEDE41F1AAAD66A1AB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EA985572751AA0F3099E357B /* TextRecognizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizerTests.swift; sourceTree = "<group>"; };
 		EF08508668DC515A03E9BBAE /* ScrollingCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCaptureService.swift; sourceTree = "<group>"; };
 		F9A7C92686C04F228593E7C5 /* SharedeCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SharedeCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -62,19 +90,31 @@
 			isa = PBXGroup;
 			children = (
 				0ECF6F7B2E1AE0D49000CD85 /* Annotation.swift */,
+				92FD35777E5C82BE684213D8 /* AppInfo.swift */,
 				E3D7A9C8191BD3528FE72A0F /* AppRuntime.swift */,
 				E53DC5AEDE41F1AAAD66A1AB /* Assets.xcassets */,
 				B5229384FBC2735D9F3540B0 /* CaptureState.swift */,
+				29C3B1BC7AA09AE5AAE30924 /* CompactEditorView.swift */,
 				9B10CAAB6A1FAF26FA32058D /* ContentView.swift */,
 				B16FE4A15F9EBAABE4D24721 /* EditorCanvas.swift */,
+				7011CC68763E496F059C97B0 /* GoogleDriveService.swift */,
 				E1EDECCDB8E82412DDBD9C90 /* Info.plist */,
+				DB8261FA6D8097470B5A1D1A /* InfoPlist.strings */,
+				09C9F73BB3F104F2BC8B9CCD /* LaunchAtLogin.swift */,
+				65B90B181DF5749D2B6EAED5 /* LiveTextView.swift */,
+				5541BD523E3239EE5AFABEB1 /* Localization.swift */,
 				4773549D824CDF2824EE8125 /* QuickAccessController.swift */,
+				9D9982428CBBF5E7CC2B9F42 /* RegionCapturer.swift */,
 				0FC4432ACA98AB8CD83929BC /* ScreenshotService.swift */,
 				EF08508668DC515A03E9BBAE /* ScrollingCaptureService.swift */,
+				5781B3E8D0B67CE690BCB087 /* ScrollingCaptureSession.swift */,
+				DDADEFA5B6C188DF3E969C26 /* ScrollStitcher.swift */,
 				5BED30380E579B0E458DD860 /* SettingsView.swift */,
 				DFD547E429FDEA36F39B03E8 /* SharedeCaptureApp.swift */,
 				0630087F4D579C06FB75E422 /* ShortcutSettings.swift */,
 				D7ADA4031BF5133416EA3DFD /* StatusMenuController.swift */,
+				8EB3D5148D6081699DF6F052 /* TextRecognizer.swift */,
+				E2F884BA7E377C4D4D3BB4F3 /* ToastController.swift */,
 			);
 			path = SharedeCapture;
 			sourceTree = "<group>";
@@ -83,8 +123,10 @@
 			isa = PBXGroup;
 			children = (
 				342E255BD2658C27FB6DA401 /* AnnotationTests.swift */,
+				3A4EAA87CBAE6CB5B9F1279F /* GoogleDriveTests.swift */,
 				3F22142436BF63E088D79D23 /* QuickAccessTests.swift */,
 				C22508AC8383498CEDD8F6AB /* ScrollingCaptureTests.swift */,
+				EA985572751AA0F3099E357B /* TextRecognizerTests.swift */,
 			);
 			path = SharedeCaptureTests;
 			sourceTree = "<group>";
@@ -134,6 +176,7 @@
 			buildPhases = (
 				220743DC7DAEA43465C491EC /* Sources */,
 				FAA2586BF60AC984CFBFBFE5 /* Resources */,
+				656AB04172D3E51D2F55273C /* Set version from git */,
 			);
 			buildRules = (
 			);
@@ -155,6 +198,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					ACCE3CF621B0E27F88A82CAE = {
+						DevelopmentTeam = N7G6YX6888;
+						ProvisioningStyle = Manual;
+					};
 				};
 			};
 			buildConfigurationList = DF83328C153A0658F2211053 /* Build configuration list for PBXProject "SharedeCapture" */;
@@ -163,6 +210,7 @@
 			knownRegions = (
 				Base,
 				en,
+				vi,
 			);
 			mainGroup = CF2A1509D9AC220C2C719817;
 			minimizedProjectReferenceProxies = 1;
@@ -183,10 +231,33 @@
 			buildActionMask = 2147483647;
 			files = (
 				E726F67C1FA756DDB1BA7F92 /* Assets.xcassets in Resources */,
+				A21DE01F7C75F9893AFBC68C /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		656AB04172D3E51D2F55273C /* Set version from git */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Set version from git";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/scripts/set-bundle-version.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1FBE134F4FA556E1AD8B4177 /* Sources */ = {
@@ -194,8 +265,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				84D58F718ACDE57930D8E5E7 /* AnnotationTests.swift in Sources */,
+				9CAED4619625AC37AE2DF985 /* GoogleDriveTests.swift in Sources */,
 				F77C690A3FB258F5CA5D928E /* QuickAccessTests.swift in Sources */,
 				06CC9B4C5A809F59AC23EA06 /* ScrollingCaptureTests.swift in Sources */,
+				D8255234B39327C81FD1D02C /* TextRecognizerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -204,17 +277,28 @@
 			buildActionMask = 2147483647;
 			files = (
 				A6488D55A565AD58324D267C /* Annotation.swift in Sources */,
+				43BB0E1248C375A01812024A /* AppInfo.swift in Sources */,
 				FBE09C11CC496BCA5B11F060 /* AppRuntime.swift in Sources */,
 				1B28DE970AA413E519DE6F3D /* CaptureState.swift in Sources */,
+				BE5A8E99D908E37D15B94F21 /* CompactEditorView.swift in Sources */,
 				F95D235B8DF3CDCCE31A5B65 /* ContentView.swift in Sources */,
 				F682370B83B7B11BFB1C911D /* EditorCanvas.swift in Sources */,
+				7F6BCD416693F66B1FAB574B /* GoogleDriveService.swift in Sources */,
+				B0079FC44C5A16895F0E800C /* LaunchAtLogin.swift in Sources */,
+				287C55DCA69374D0BF726B7C /* LiveTextView.swift in Sources */,
+				4CBBF6E3C4D01A3D48C2DCA9 /* Localization.swift in Sources */,
 				937132C98A9F7E2400A6E0D6 /* QuickAccessController.swift in Sources */,
+				0A3BC1BD3211CDC4E81C4655 /* RegionCapturer.swift in Sources */,
 				A849AA4D63A74DDCAB9E0916 /* ScreenshotService.swift in Sources */,
+				1857AA9592CE88D9CDADF02D /* ScrollStitcher.swift in Sources */,
 				CC95EA7682A13A1151DE55CD /* ScrollingCaptureService.swift in Sources */,
+				04DAAD8FE6687D3E97C88F8A /* ScrollingCaptureSession.swift in Sources */,
 				936E7F45A851682AB7C8BC04 /* SettingsView.swift in Sources */,
 				5D03ECD1F09B6BA9A7A094E9 /* SharedeCaptureApp.swift in Sources */,
 				0D756F6867961AC896D10EB6 /* ShortcutSettings.swift in Sources */,
 				0F9CE79140E9C589CC8DA843 /* StatusMenuController.swift in Sources */,
+				DFB3E73425F25873F3A7BA31 /* TextRecognizer.swift in Sources */,
+				D70EEAD15DF19E6A6B20597D /* ToastController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,7 +326,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.SharedeCaptureTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SharedeCapture.app/Contents/MacOS/SharedeCapture";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sharedee Tools.app/Contents/MacOS/Sharedee Tools";
 			};
 			name = Release;
 		};
@@ -280,7 +364,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -339,7 +422,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGNING_ALLOWED = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -374,17 +456,26 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N7G6YX6888;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SharedeCapture/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.app;
 				PRODUCT_MODULE_NAME = SharedeCapture;
 				PRODUCT_NAME = "Sharedee Tools";
 				SDKROOT = macosx;
+				SHAREDEE_GOOGLE_CLIENT_ID = "";
+				SHAREDEE_GOOGLE_CLIENT_SECRET = "";
 			};
 			name = Release;
 		};
@@ -392,17 +483,26 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = N7G6YX6888;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = SharedeCapture/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.app;
 				PRODUCT_MODULE_NAME = SharedeCapture;
 				PRODUCT_NAME = "Sharedee Tools";
 				SDKROOT = macosx;
+				SHAREDEE_GOOGLE_CLIENT_ID = "";
+				SHAREDEE_GOOGLE_CLIENT_SECRET = "";
 			};
 			name = Debug;
 		};
@@ -419,7 +519,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.SharedeCaptureTests;
 				SDKROOT = macosx;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SharedeCapture.app/Contents/MacOS/SharedeCapture";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Sharedee Tools.app/Contents/MacOS/Sharedee Tools";
 			};
 			name = Debug;
 		};

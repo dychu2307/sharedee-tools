@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import Vision
 
 struct RecentCapture: Identifiable {
     let id = UUID()
@@ -12,9 +11,14 @@ struct RecentCapture: Identifiable {
 @MainActor
 final class CaptureState: ObservableObject {
     weak var preferences: ShortcutSettings?
+    weak var driveService: GoogleDriveService?
     var willCapture: (() -> Void)?
     var didCapture: (() -> Void)?
+    /// Handles the "upload to Drive" post-capture action so the thumbnail can show progress.
+    var uploadHandler: ((RecentCapture) -> Void)?
     var captureFailed: (() -> Void)?
+    /// Called when "Capture and copy text" ends, so the app can restore windows and report it.
+    var textCaptureFinished: ((TextCaptureResult) -> Void)?
     @Published var image: NSImage?
     @Published var annotations: [Annotation] = []
     @Published var selectedID: UUID?
@@ -23,7 +27,7 @@ final class CaptureState: ObservableObject {
     @Published var lineWidth: CGFloat = 5
     @Published var cropRect: CGRect?
     @Published var recent: [RecentCapture] = []
-    @Published var status = "Sẵn sàng chụp"
+    @Published var status = L10n.tr("Sẵn sàng chụp")
     @Published var isCapturing = false
 
     private struct Snapshot {
@@ -33,13 +37,12 @@ final class CaptureState: ObservableObject {
 
     private var undoStack: [Snapshot] = []
     private var redoStack: [Snapshot] = []
-    private var pinnedWindows: [NSPanel] = []
 
     var canUndo: Bool { !undoStack.isEmpty }
     var canRedo: Bool { !redoStack.isEmpty }
     var selectedAnnotation: Annotation? { annotations.first { $0.id == selectedID } }
     var imageDimensions: String {
-        guard let image else { return "Chưa có ảnh" }
+        guard let image else { return L10n.tr("Chưa có ảnh") }
         return "\(Int(image.size.width)) × \(Int(image.size.height)) px"
     }
 
@@ -57,24 +60,27 @@ final class CaptureState: ObservableObject {
     func capture(_ mode: CaptureMode) async -> Bool {
         guard !isCapturing else { return false }
         isCapturing = true
-        status = "Đang chụp: \(mode.title.lowercased())…"
+        do { try ScreenshotService.ensurePermission() }
+        catch {
+            status = error.localizedDescription
+            isCapturing = false
+            return false
+        }
+        status = L10n.format("Đang chụp: %@…", mode.title.lowercased())
         willCapture?()
-        NSApp.hide(nil)
         try? await Task.sleep(nanoseconds: UInt64(350 + (preferences?.captureDelay ?? 0) * 1000) * 1_000_000)
         do {
             let url = try await ScreenshotService.capture(mode,
                                                           includeCursor: preferences?.includeCursor ?? false)
-            NSApp.unhideWithoutActivation()
             try loadImage(at: url)
             recent.insert(RecentCapture(url: url, capturedAt: .now, mode: mode), at: 0)
             recent = Array(recent.prefix(8))
-            status = "Đã chụp \(mode.title.lowercased()) · \(imageDimensions)"
-            if preferences?.autoCopy == true { copyImage() }
+            status = L10n.format("Đã chụp %@ · %@", mode.title.lowercased(), imageDimensions)
             didCapture?()
+            performPostCaptureAction()
             isCapturing = false
             return true
         } catch {
-            NSApp.unhideWithoutActivation()
             status = error.localizedDescription
             captureFailed?()
             isCapturing = false
@@ -82,87 +88,92 @@ final class CaptureState: ObservableObject {
         }
     }
 
+    /// Captures an area only to read its text. The screenshot is temporary: it does not replace
+    /// the image being edited, run the post-capture action, show a thumbnail, or join Recent.
     func captureText() async {
-        guard await capture(.area) else { return }
-        await copyRecognizedText()
+        guard !isCapturing else { return }
+        isCapturing = true
+        defer { isCapturing = false }
+        do { try ScreenshotService.ensurePermission() }
+        catch {
+            status = error.localizedDescription
+            textCaptureFinished?(.failed(status))
+            return
+        }
+        status = L10n.tr("Kéo để chọn vùng có chữ")
+        willCapture?()
+        try? await Task.sleep(nanoseconds: 350_000_000)
+        do {
+            let url = try await ScreenshotService.capture(.area)
+            defer { try? FileManager.default.removeItem(at: url) }
+            guard let image = TextRecognizer.cgImage(from: try Data(contentsOf: url)) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            status = L10n.tr("Đang nhận dạng chữ…")
+            let result = copyText(try await TextRecognizer.recognize(image))
+            textCaptureFinished?(result)
+        } catch CaptureError.cancelled {
+            status = L10n.tr("Đã hủy chụp ảnh")
+            textCaptureFinished?(.cancelled)
+        } catch {
+            status = error.localizedDescription
+            textCaptureFinished?(.failed(status))
+        }
     }
 
     func captureScrolling() async {
         guard !isCapturing else { return }
         isCapturing = true
-        status = "Đang chụp cuộn…"
+        do { try ScreenshotService.ensurePermission() }
+        catch {
+            status = error.localizedDescription
+            isCapturing = false
+            return
+        }
+        status = L10n.tr("Đang chụp cuộn…")
         willCapture?()
-        NSApp.hide(nil)
-        try? await Task.sleep(nanoseconds: UInt64(350 + (preferences?.captureDelay ?? 0) * 1000) * 1_000_000)
+        // Give our own windows time to hide before the selection overlay appears.
+        try? await Task.sleep(nanoseconds: 200_000_000)
         do {
             let url = try await ScrollingCaptureService.capture(
-                maxFrames: preferences?.maxScrollFrames ?? 10)
-            NSApp.unhideWithoutActivation()
+                maxHeight: preferences?.maxScrollHeight ?? ShortcutSettings.defaultMaxScrollHeight)
             try loadImage(at: url)
             recent.insert(RecentCapture(url: url, capturedAt: .now, mode: .scrolling), at: 0)
             recent = Array(recent.prefix(8))
-            status = "Đã chụp cuộn · \(imageDimensions)"
-            if preferences?.autoCopy == true { copyImage() }
+            status = L10n.format("Đã chụp cuộn · %@", imageDimensions)
             didCapture?()
+            performPostCaptureAction()
         } catch {
-            NSApp.unhideWithoutActivation()
             status = error.localizedDescription
             captureFailed?()
         }
         isCapturing = false
     }
 
-    func copyRecognizedText() async {
-        guard let data = renderedPNG(), let bitmap = NSBitmapImageRep(data: data),
-              let image = bitmap.cgImage else { return }
-        status = "Đang nhận dạng chữ…"
+    /// Recognizes the text in the image being edited (annotations included) and copies it.
+    @discardableResult
+    func copyRecognizedText() async -> TextCaptureResult {
+        guard let data = renderedPNG(), let image = TextRecognizer.cgImage(from: data) else {
+            return .failed(L10n.tr("Không thể đọc ảnh đã chụp"))
+        }
+        status = L10n.tr("Đang nhận dạng chữ…")
         do {
-            let recognized = try await withCheckedThrowingContinuation {
-                (continuation: CheckedContinuation<String, Error>) in
-                DispatchQueue.global(qos: .userInitiated).async {
-                    do {
-                        let request = VNRecognizeTextRequest()
-                        request.recognitionLevel = .accurate
-                        request.usesLanguageCorrection = true
-                        try VNImageRequestHandler(cgImage: image).perform([request])
-                        let text = (request.results ?? [])
-                            .compactMap { $0.topCandidates(1).first?.string }
-                            .joined(separator: "\n")
-                        continuation.resume(returning: text)
-                    } catch { continuation.resume(throwing: error) }
-                }
-            }
-            guard !recognized.isEmpty else {
-                status = "Không tìm thấy chữ trong ảnh"
-                return
-            }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(recognized, forType: .string)
-            status = "Đã sao chép chữ nhận dạng vào clipboard"
-        } catch { status = error.localizedDescription }
+            return copyText(try await TextRecognizer.recognize(image))
+        } catch {
+            status = error.localizedDescription
+            return .failed(status)
+        }
     }
 
-    func pinImage() {
-        guard let data = renderedPNG(), let image = NSImage(data: data) else { return }
-        let width: CGFloat = min(520, image.size.width)
-        let height = width * image.size.height / image.size.width
-        let panel = NSPanel(contentRect: CGRect(x: 180, y: 180, width: width,
-                                                height: min(height, 640)),
-                            styleMask: [.titled, .closable, .resizable, .utilityWindow],
-                            backing: .buffered, defer: false)
-        panel.title = "Ảnh ghim"
-        panel.level = .floating
-        panel.isReleasedWhenClosed = false
-        panel.contentMinSize = CGSize(width: 180, height: 120)
-        let imageView = NSImageView(frame: panel.contentView?.bounds ?? .zero)
-        imageView.image = image
-        imageView.imageScaling = .scaleProportionallyUpOrDown
-        imageView.autoresizingMask = [.width, .height]
-        panel.contentView = imageView
-        panel.makeKeyAndOrderFront(nil)
-        pinnedWindows.removeAll { !$0.isVisible }
-        pinnedWindows.append(panel)
-        status = "Đã ghim ảnh lên màn hình"
+    private func copyText(_ lines: [String]) -> TextCaptureResult {
+        guard !lines.isEmpty else {
+            status = L10n.tr("Không tìm thấy chữ trong ảnh")
+            return .noText
+        }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
+        status = L10n.tr("Đã sao chép chữ nhận dạng vào clipboard")
+        return .copied(lines)
     }
 
     @discardableResult
@@ -173,7 +184,7 @@ final class CaptureState: ObservableObject {
         guard panel.runModal() == .OK, let url = panel.url else { return false }
         do {
             try loadImage(at: url)
-            status = "Đã mở \(url.lastPathComponent)"
+            status = L10n.format("Đã mở %@", url.lastPathComponent)
             return true
         } catch {
             status = error.localizedDescription
@@ -185,7 +196,7 @@ final class CaptureState: ObservableObject {
     func openRecent(_ capture: RecentCapture) -> Bool {
         do {
             try loadImage(at: capture.url)
-            status = "Đã mở ảnh \(capture.mode.title.lowercased())"
+            status = L10n.format("Đã mở ảnh %@", capture.mode.title.lowercased())
             return true
         } catch {
             status = error.localizedDescription
@@ -219,14 +230,14 @@ final class CaptureState: ObservableObject {
         annotations.append(annotation)
         selectedID = annotation.tool == .text ? annotation.id : nil
         if annotation.tool == .text { tool = .select }
-        status = "Đã thêm \(annotation.tool.title.lowercased())"
+        status = L10n.format("Đã thêm %@", annotation.tool.title.lowercased())
     }
 
     func update(_ annotation: Annotation) {
         guard let index = annotations.firstIndex(where: { $0.id == annotation.id }) else { return }
         checkpoint()
         annotations[index] = annotation
-        status = "Đã di chuyển chú thích"
+        status = L10n.tr("Đã di chuyển chú thích")
     }
 
     func setSelectedText(_ text: String) {
@@ -235,7 +246,7 @@ final class CaptureState: ObservableObject {
               annotations[index].text != text else { return }
         checkpoint()
         annotations[index].text = text
-        status = "Đã sửa chữ"
+        status = L10n.tr("Đã sửa chữ")
     }
 
     func deleteSelected() {
@@ -243,7 +254,7 @@ final class CaptureState: ObservableObject {
         checkpoint()
         annotations.removeAll { $0.id == selectedID }
         selectedID = nil
-        status = "Đã xóa chú thích"
+        status = L10n.tr("Đã xóa chú thích")
     }
 
     func undo() {
@@ -253,7 +264,7 @@ final class CaptureState: ObservableObject {
         annotations = previous.annotations
         selectedID = nil
         cropRect = nil
-        status = "Đã hoàn tác"
+        status = L10n.tr("Đã hoàn tác")
     }
 
     func redo() {
@@ -263,7 +274,7 @@ final class CaptureState: ObservableObject {
         annotations = next.annotations
         selectedID = nil
         cropRect = nil
-        status = "Đã làm lại"
+        status = L10n.tr("Đã làm lại")
     }
 
     func applyCrop() {
@@ -282,34 +293,138 @@ final class CaptureState: ObservableObject {
         selectedID = nil
         self.cropRect = nil
         tool = .select
-        status = "Đã cắt ảnh còn \(imageDimensions)"
+        status = L10n.format("Đã cắt ảnh còn %@", imageDimensions)
     }
 
-    func copyImage() {
-        guard let data = renderedPNG() else { return }
+    @discardableResult
+    func copyImage() -> Bool {
+        guard let data = renderedPNG() else { return false }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setData(data, forType: .png)
-        status = "Đã sao chép ảnh vào clipboard"
+        let copied = pasteboard.setData(data, forType: .png)
+        status = copied ? L10n.tr("Đã sao chép ảnh vào clipboard") : L10n.tr("Không thể sao chép ảnh vào clipboard")
+        return copied
+    }
+
+    @discardableResult
+    func copyImage(_ capture: RecentCapture) -> Bool {
+        guard let data = try? Data(contentsOf: capture.url) else {
+            status = L10n.tr("Không thể đọc ảnh đã chụp")
+            return false
+        }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        let copied = pasteboard.setData(data, forType: .png)
+        status = copied ? L10n.tr("Đã sao chép ảnh vào clipboard") : L10n.tr("Không thể sao chép ảnh vào clipboard")
+        return copied
+    }
+
+    private func performPostCaptureAction() {
+        switch preferences?.postCaptureAction ?? .copy {
+        case .copy: copyImage()
+        case .saveToFolder: _ = saveImageToFolder()
+        case .uploadToDrive:
+            if let uploadHandler, let capture = recent.first {
+                uploadHandler(capture)
+            } else if let data = renderedPNG() {
+                let name = generatedFileName()
+                Task { [weak self] in _ = await self?.uploadToDrive(data, name: name) }
+            }
+        case .thumbnailOnly: break
+        }
+    }
+
+    @discardableResult
+    func uploadImageToDrive() async -> Bool {
+        guard let data = renderedPNG() else { return false }
+        return await uploadToDrive(data, name: generatedFileName())
+    }
+
+    /// Uploads a capture and returns its Drive link, or nil with the reason left in `status`.
+    func uploadImageToDrive(_ capture: RecentCapture) async -> URL? {
+        guard let data = try? Data(contentsOf: capture.url) else {
+            status = L10n.tr("Không thể đọc ảnh đã chụp")
+            return nil
+        }
+        return await uploadFile(data, name: generatedFileName())
+    }
+
+    private func uploadToDrive(_ data: Data, name: String) async -> Bool {
+        await uploadFile(data, name: name) != nil
+    }
+
+    private func uploadFile(_ data: Data, name: String) async -> URL? {
+        guard let driveService else { return nil }
+        status = L10n.tr("Đang tải ảnh lên Google Drive…")
+        do {
+            let url = try await driveService.uploadPNG(data, name: name)
+            status = L10n.format("Đã tải ảnh lên Google Drive: %@", url.absoluteString)
+            return url
+        } catch {
+            status = error.localizedDescription
+            return nil
+        }
     }
 
     @discardableResult
     func saveImage() -> Bool {
         guard let data = renderedPNG() else { return false }
+        if let folder = preferences?.saveFolderURL {
+            return writeImage(data, to: folder.appendingPathComponent(generatedFileName()))
+        }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        panel.nameFieldStringValue = "Capture-\(formatter.string(from: .now)).png"
+        panel.nameFieldStringValue = generatedFileName()
         guard panel.runModal() == .OK, let url = panel.url else { return false }
+        return writeImage(data, to: url)
+    }
+
+    @discardableResult
+    func saveImage(_ capture: RecentCapture) -> Bool {
+        guard let data = try? Data(contentsOf: capture.url) else {
+            status = L10n.tr("Không thể đọc ảnh đã chụp")
+            return false
+        }
+        if let folder = preferences?.saveFolderURL {
+            return writeImage(data, to: folder.appendingPathComponent(generatedFileName()))
+        }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.png]
+        panel.nameFieldStringValue = generatedFileName()
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        return writeImage(data, to: url)
+    }
+
+    @discardableResult
+    func saveImageToFolder() -> Bool {
+        guard let data = renderedPNG() else { return false }
+        guard let folder = preferences?.saveFolderURL else {
+            status = L10n.tr("Hãy chọn thư mục lưu trong Cài đặt trước.")
+            return false
+        }
+        return writeImage(data, to: folder.appendingPathComponent(generatedFileName()))
+    }
+
+    private func generatedFileName() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss-SSS"
+        return "Sharedee-\(formatter.string(from: .now))-\(UUID().uuidString.prefix(6)).png"
+    }
+
+    private func writeImage(_ data: Data, to url: URL) -> Bool {
         do {
             try data.write(to: url, options: .atomic)
-            status = "Đã lưu \(url.lastPathComponent)"
+            status = L10n.format("Đã lưu %@", url.lastPathComponent)
             return true
         } catch {
             status = error.localizedDescription
             return false
         }
+    }
+
+    /// The image as it will be exported, with annotations drawn in.
+    func renderedImage() -> NSImage? {
+        renderedPNG().flatMap(NSImage.init(data:))
     }
 
     private func renderedPNG() -> Data? {
@@ -332,4 +447,11 @@ final class CaptureState: ObservableObject {
         NSGraphicsContext.restoreGraphicsState()
         return bitmap.representation(using: .png, properties: [:])
     }
+}
+
+enum TextCaptureResult: Equatable {
+    case copied([String])
+    case noText
+    case cancelled
+    case failed(String)
 }

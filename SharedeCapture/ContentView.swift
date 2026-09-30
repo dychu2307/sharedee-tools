@@ -1,379 +1,312 @@
+import AppKit
 import SwiftUI
 
-private enum Palette {
+private enum HomeStyle {
     static let background = Color(red: 0.075, green: 0.088, blue: 0.108)
-    static let sidebar = Color(red: 0.11, green: 0.125, blue: 0.15)
-    static let panel = Color(red: 0.14, green: 0.16, blue: 0.19)
+    static let sidebar = Color(red: 0.105, green: 0.12, blue: 0.145)
     static let accent = Color(red: 0.31, green: 0.87, blue: 0.78)
-    static let muted = Color(red: 0.58, green: 0.62, blue: 0.67)
+    static let muted = Color(red: 0.59, green: 0.63, blue: 0.68)
+}
+
+enum HomePage: Hashable {
+    case capture, recent, settings(SettingsPage)
+
+    var title: String {
+        switch self {
+        case .capture: L10n.tr("Chụp ảnh")
+        case .recent: L10n.tr("Ảnh gần đây")
+        case .settings(let page): page.title
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .capture: "viewfinder"
+        case .recent: "clock.arrow.circlepath"
+        case .settings(let page): page.symbol
+        }
+    }
+
+    var settingsPage: SettingsPage? {
+        if case .settings(let page) = self { return page }
+        return nil
+    }
+}
+
+@MainActor
+final class MainNavigation: ObservableObject {
+    @Published var page: HomePage = .capture
 }
 
 struct ContentView: View {
     @EnvironmentObject private var state: CaptureState
     @EnvironmentObject private var shortcuts: ShortcutSettings
+    @EnvironmentObject private var navigation: MainNavigation
+    @ObservedObject private var language = LanguageSettings.shared
+
+    private var page: HomePage { navigation.page }
 
     var body: some View {
         HStack(spacing: 0) {
             sidebar
-                .frame(width: 238)
-                .background(Palette.sidebar)
+                .frame(width: 206)
+                .background(HomeStyle.sidebar)
             Rectangle()
                 .fill(.white.opacity(0.08))
                 .frame(width: 1)
-            workspace
+            VStack(spacing: 0) {
+                if let settingsPage = page.settingsPage {
+                    SettingsView(page: settingsPage)
+                } else {
+                    header
+                    Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
+                    ScrollView {
+                        Group {
+                            switch page {
+                            case .capture: capturePage
+                            case .recent: recentPage
+                            case .settings: EmptyView()
+                            }
+                        }
+                        .frame(maxWidth: 720, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(28)
+                    }
+                }
+                statusBar
+            }
         }
-        .background(Palette.background)
+        .background(HomeStyle.background)
+        .frame(minWidth: 700, minHeight: 460)
+        .onChange(of: language.selection) { _ in
+            if !state.isCapturing { state.status = L10n.tr("Sẵn sàng chụp") }
+            AppRuntime.shared.drive.refreshLanguage()
+        }
     }
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 11) {
-                Image(systemName: "viewfinder")
-                    .font(.system(size: 21, weight: .medium))
-                    .foregroundStyle(Palette.accent)
-                    .frame(width: 39, height: 39)
-                    .background(Palette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("SHAREDEE TOOLS")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .tracking(1.8)
-                    Text("CHỤP & CHỈNH SỬA")
-                        .font(.system(size: 9, weight: .semibold))
-                        .tracking(1.5)
-                        .foregroundStyle(Palette.muted)
-                }
+            HStack(spacing: 10) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 38, height: 38)
+                Text("Sharedee Tools")
+                    .font(.system(size: 15, weight: .bold))
             }
-            .padding(.top, 28)
-            .padding(.bottom, 36)
+            .padding(.horizontal, 18)
+            .padding(.top, 27)
+            .padding(.bottom, 35)
 
-            sectionLabel("CHỤP ẢNH")
-            VStack(spacing: 8) {
-                captureButton(.area, shortcut: shortcuts.shortcut(for: .area).display, prominent: true)
-                captureButton(.window, shortcut: shortcuts.shortcut(for: .window).display)
-                captureButton(.fullScreen, shortcut: shortcuts.shortcut(for: .fullScreen).display)
-                Button { Task { await state.captureScrolling() } } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "scroll")
-                            .frame(width: 21)
-                        Text("Chụp cuộn")
-                        Spacer()
-                        Text(shortcuts.shortcut(for: .scrolling).display)
-                            .font(.system(size: 10))
-                            .opacity(0.65)
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .padding(.horizontal, 13)
-                    .frame(height: 41)
-                    .background(Palette.panel, in: RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.plain)
-                .disabled(state.isCapturing)
-            }
-            .padding(.top, 12)
+            Text(L10n.tr("CÔNG CỤ"))
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1.2)
+                .foregroundStyle(HomeStyle.muted)
+                .padding(.horizontal, 19)
+                .padding(.bottom, 10)
 
-            sectionLabel("THƯ VIỆN")
-                .padding(.top, 35)
-            Button { state.openImage() } label: {
-                Label("Mở ảnh…", systemImage: "folder")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(SidebarButtonStyle())
-            .padding(.top, 10)
-            Button { AppRuntime.shared.showSettings() } label: {
-                Label("Cài đặt & phím tắt…", systemImage: "gearshape")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(SidebarButtonStyle())
-
-            if !state.recent.isEmpty {
-                sectionLabel("ẢNH VỪA CHỤP")
-                    .padding(.top, 31)
-                ScrollView {
-                    VStack(spacing: 3) {
-                        ForEach(state.recent) { item in
-                            Button { state.openRecent(item) } label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: item.mode.symbol)
-                                        .frame(width: 17)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(item.mode.title)
-                                            .font(.system(size: 12, weight: .medium))
-                                        Text(item.capturedAt, style: .time)
-                                            .font(.system(size: 10))
-                                            .foregroundStyle(Palette.muted)
-                                    }
-                                    Spacer()
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(SidebarButtonStyle())
+            ForEach([HomePage.capture, .recent], id: \.self) { item in
+                Button { navigation.page = item } label: {
+                    HStack(spacing: 11) {
+                        Image(systemName: item.symbol)
+                            .frame(width: 18)
+                        Text(item.title)
+                        Spacer(minLength: 0)
+                        if item == .recent && !state.recent.isEmpty {
+                            Text("\(state.recent.count)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(HomeStyle.muted)
                         }
                     }
+                    .font(.system(size: 13, weight: page == item ? .semibold : .medium))
+                    .foregroundStyle(page == item ? .white : HomeStyle.muted)
+                    .padding(.horizontal, 12)
+                    .frame(height: 39)
+                    .background(page == item ? HomeStyle.accent.opacity(0.14) : .clear,
+                                in: RoundedRectangle(cornerRadius: 8))
                 }
-                .frame(maxHeight: 170)
-                .padding(.top, 8)
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+                .accessibilityAddTraits(page == item ? [.isSelected] : [])
             }
 
-            Spacer(minLength: 20)
-            VStack(alignment: .leading, spacing: 7) {
-                Image(systemName: "lightbulb")
-                    .foregroundStyle(Palette.accent)
-                Text("Chụp, ghi chú và chia sẻ chỉ trong một app.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Palette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(15)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.panel, in: RoundedRectangle(cornerRadius: 12))
-            .padding(.bottom, 17)
-        }
-        .padding(.horizontal, 17)
-    }
+            Text(L10n.tr("CÀI ĐẶT"))
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1.2)
+                .foregroundStyle(HomeStyle.muted)
+                .padding(.horizontal, 19)
+                .padding(.top, 30)
+                .padding(.bottom, 10)
 
-    private func sectionLabel(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .bold))
-            .tracking(1.4)
-            .foregroundStyle(Palette.muted)
-    }
-
-    private func captureButton(_ mode: CaptureMode, shortcut: String,
-                               prominent: Bool = false) -> some View {
-        Button { Task { await state.capture(mode) } } label: {
-            HStack(spacing: 10) {
-                Image(systemName: mode.symbol)
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 21)
-                Text(mode.title)
-                    .font(.system(size: 12, weight: .semibold))
-                Spacer()
-                Text(shortcut)
-                    .font(.system(size: 10, weight: .medium))
-                    .opacity(0.65)
+            ForEach(SettingsPage.allCases) { item in
+                let destination = HomePage.settings(item)
+                Button { navigation.page = destination } label: {
+                    Label(item.title, systemImage: item.symbol)
+                        .font(.system(size: 13, weight: page == destination ? .semibold : .medium))
+                        .foregroundStyle(page == destination ? .white : HomeStyle.muted)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .frame(height: 39)
+                        .background(page == destination ? HomeStyle.accent.opacity(0.14) : .clear,
+                                    in: RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+                .accessibilityAddTraits(page == destination ? [.isSelected] : [])
             }
-            .padding(.horizontal, 13)
-            .frame(height: 41)
-            .background(prominent ? Palette.accent : Palette.panel,
-                        in: RoundedRectangle(cornerRadius: 10))
-            .foregroundStyle(prominent ? Palette.background : .white)
-        }
-        .buttonStyle(.plain)
-        .disabled(state.isCapturing)
-    }
 
-    private var workspace: some View {
-        VStack(spacing: 0) {
-            header
-            Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
-            if state.image != nil {
-                tools
-                Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
-                EditorCanvas(state: state)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                inspector
-            } else {
-                emptyState
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            statusBar
+            Spacer(minLength: 18)
         }
     }
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(state.image == nil ? "Chào mừng" : "Chỉnh sửa ảnh")
-                    .font(.system(size: 19, weight: .semibold))
-                Text(state.image == nil ? "Bắt đầu với một ảnh chụp màn hình" : state.imageDimensions)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Palette.muted)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(page.title)
+                    .font(.system(size: 23, weight: .bold))
+                Text(page == .capture ? L10n.tr("Chọn một thao tác để bắt đầu") : L10n.tr("Mở lại hoặc sao chép ảnh đã chụp"))
+                    .font(.system(size: 12))
+                    .foregroundStyle(HomeStyle.muted)
             }
             Spacer()
-            if state.image != nil {
-                Button { Task { await state.copyRecognizedText() } } label: {
-                    Label("Lấy chữ", systemImage: "text.viewfinder")
-                }
-                .buttonStyle(QuietActionStyle())
-                Button { state.pinImage() } label: {
-                    Label("Ghim", systemImage: "pin")
-                }
-                .buttonStyle(QuietActionStyle())
-                Button { state.copyImage() } label: {
-                    Label("Sao chép", systemImage: "doc.on.doc")
-                }
-                .buttonStyle(QuietActionStyle())
-                Button { state.saveImage() } label: {
-                    Label("Lưu PNG", systemImage: "square.and.arrow.down")
-                }
-                .buttonStyle(AccentActionStyle())
+            Button { AppRuntime.shared.openImage() } label: {
+                Label(L10n.tr("Mở ảnh…"), systemImage: "folder")
+                    .font(.system(size: 12, weight: .semibold))
             }
+            .buttonStyle(.bordered)
         }
-        .padding(.horizontal, 24)
-        .frame(height: 74)
+        .padding(.horizontal, 28)
+        .frame(height: 85)
     }
 
-    private var tools: some View {
-        HStack(spacing: 5) {
-            ForEach(EditorTool.allCases) { tool in
+    private var capturePage: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(L10n.tr("CHẾ ĐỘ CHỤP"))
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(HomeStyle.muted)
+                Spacer()
+                Text(L10n.tr("PHÍM TẮT"))
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(HomeStyle.muted)
+            }
+            .padding(.bottom, 12)
+
+            ForEach(ShortcutAction.allCases) { action in
                 Button {
-                    state.tool = tool
-                    if tool != .crop { state.cropRect = nil }
+                    Task { await state.perform(action) }
                 } label: {
-                    Image(systemName: tool.symbol)
-                        .font(.system(size: 15, weight: .medium))
-                        .frame(width: 37, height: 37)
-                        .foregroundStyle(state.tool == tool ? Palette.accent : .white.opacity(0.75))
-                        .background(state.tool == tool ? Palette.accent.opacity(0.14) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 8))
+                    HStack(spacing: 15) {
+                        Image(systemName: action.symbol)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(HomeStyle.accent)
+                            .frame(width: 42, height: 42)
+                            .background(HomeStyle.accent.opacity(0.1),
+                                        in: RoundedRectangle(cornerRadius: 10))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(action.title)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.white)
+                            Text(description(for: action))
+                                .font(.system(size: 11))
+                                .foregroundStyle(HomeStyle.muted)
+                                .lineLimit(2)
+                        }
+                        Spacer(minLength: 12)
+                        Text(shortcuts.shortcut(for: action).display)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(HomeStyle.muted)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 14)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(tool.title)
+                .disabled(state.isCapturing)
+                Divider().background(.white.opacity(0.06))
             }
-            Spacer(minLength: 10)
-            if state.cropRect != nil {
-                Button("Cắt ảnh") { state.applyCrop() }
-                    .buttonStyle(AccentActionStyle())
+
+            HStack(spacing: 8) {
+                Image(systemName: "doc.on.doc")
+                Text(L10n.format("Mặc định: %@", shortcuts.postCaptureAction.title))
             }
-            Button { state.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .buttonStyle(ToolActionStyle())
-                .disabled(!state.canUndo)
-                .help("Hoàn tác")
-            Button { state.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .buttonStyle(ToolActionStyle())
-                .disabled(!state.canRedo)
-                .help("Làm lại")
+            .font(.system(size: 11))
+            .foregroundStyle(HomeStyle.muted)
+            .padding(.top, 20)
         }
-        .padding(.horizontal, 19)
-        .frame(height: 57)
     }
 
-    private var inspector: some View {
-        HStack(spacing: 16) {
-            Text("NÉT VẼ")
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1.3)
-                .foregroundStyle(Palette.muted)
-            ColorPicker("", selection: Binding(
-                get: { Color(nsColor: state.color) },
-                set: { state.color = NSColor($0) }
-            ), supportsOpacity: false)
-            .labelsHidden()
-            .frame(width: 42)
-            Slider(value: $state.lineWidth, in: 2...16)
-                .frame(width: 130)
-            Text("\(Int(state.lineWidth)) px")
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundStyle(Palette.muted)
-                .frame(width: 36, alignment: .leading)
-            if let selected = state.selectedAnnotation, selected.tool == .text {
-                Rectangle().fill(.white.opacity(0.12)).frame(width: 1, height: 22)
-                TextField("Nội dung chữ", text: Binding(
-                    get: { state.selectedAnnotation?.text ?? "" },
-                    set: { state.setSelectedText($0) }
-                ))
-                .textFieldStyle(.roundedBorder)
-                .frame(maxWidth: 220)
-            }
-            Spacer()
-            if state.selectedID != nil {
-                Button("Xóa") { state.deleteSelected() }
-                    .buttonStyle(QuietActionStyle())
+    private var recentPage: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if state.recent.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 32, weight: .ultraLight))
+                        .foregroundStyle(HomeStyle.accent)
+                    Text(L10n.tr("Chưa có ảnh gần đây"))
+                        .font(.system(size: 17, weight: .semibold))
+                    Text(L10n.tr("Ảnh vừa chụp sẽ xuất hiện ở đây trong phiên làm việc này."))
+                        .font(.system(size: 12))
+                        .foregroundStyle(HomeStyle.muted)
+                }
+                .padding(.top, 50)
+            } else {
+                ForEach(state.recent) { item in
+                    HStack(spacing: 14) {
+                        Image(nsImage: NSImage(contentsOf: item.url) ?? NSImage())
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 78, height: 52)
+                            .clipped()
+                            .background(.black.opacity(0.25),
+                                        in: RoundedRectangle(cornerRadius: 7))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.mode.title)
+                                .font(.system(size: 13, weight: .semibold))
+                            Text(item.capturedAt, style: .time)
+                                .font(.system(size: 11))
+                                .foregroundStyle(HomeStyle.muted)
+                        }
+                        Spacer()
+                        Button(L10n.tr("Sao chép")) { state.copyImage(item) }
+                            .buttonStyle(.bordered)
+                        Button(L10n.tr("Chỉnh sửa")) { AppRuntime.shared.openRecent(item) }
+                            .buttonStyle(.bordered)
+                    }
+                    .padding(.vertical, 12)
+                    Divider().background(.white.opacity(0.06))
+                }
             }
         }
-        .padding(.horizontal, 24)
-        .frame(height: 57)
-        .background(Palette.sidebar)
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "viewfinder")
-                .font(.system(size: 47, weight: .ultraLight))
-                .foregroundStyle(Palette.accent)
-                .frame(width: 112, height: 112)
-                .background(Palette.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 26))
-                .overlay(RoundedRectangle(cornerRadius: 26).stroke(Palette.accent.opacity(0.18)))
-            VStack(spacing: 7) {
-                Text("Chụp điều bạn muốn chia sẻ")
-                    .font(.system(size: 24, weight: .semibold))
-                Text("Chọn một vùng, một cửa sổ hoặc toàn màn hình để bắt đầu.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Palette.muted)
-            }
-            HStack(spacing: 10) {
-                Button { Task { await state.capture(.area) } } label: {
-                    Label("Chụp vùng chọn", systemImage: "selection.pin.in.out")
-                }
-                .buttonStyle(AccentActionStyle())
-                Button { state.openImage() } label: {
-                    Label("Mở ảnh", systemImage: "folder")
-                }
-                .buttonStyle(QuietActionStyle())
-            }
-            .padding(.top, 7)
-        }
-        .padding(32)
     }
 
     private var statusBar: some View {
         HStack(spacing: 8) {
-            Circle().fill(state.isCapturing ? Color.orange : Palette.accent)
+            Circle()
+                .fill(state.isCapturing ? Color.orange : HomeStyle.accent)
                 .frame(width: 6, height: 6)
             Text(state.status)
                 .lineLimit(1)
             Spacer()
-            Text(state.image == nil ? "macOS" : "PNG · Độ phân giải gốc")
+            Text("Sharedee Tools")
         }
         .font(.system(size: 10))
-        .foregroundStyle(Palette.muted)
-        .padding(.horizontal, 24)
-        .frame(height: 28)
-        .background(Palette.sidebar)
+        .foregroundStyle(HomeStyle.muted)
+        .padding(.horizontal, 20)
+        .frame(height: 29)
+        .background(HomeStyle.sidebar)
     }
-}
 
-private struct SidebarButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12))
-            .foregroundStyle(.white.opacity(configuration.isPressed ? 0.6 : 0.82))
-            .padding(.horizontal, 12)
-            .frame(height: 39)
-            .background(configuration.isPressed ? Palette.panel : .clear,
-                        in: RoundedRectangle(cornerRadius: 9))
-    }
-}
-
-private struct AccentActionStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(Palette.background)
-            .padding(.horizontal, 16)
-            .frame(height: 34)
-            .background(Palette.accent.opacity(configuration.isPressed ? 0.72 : 1),
-                        in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-private struct QuietActionStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white.opacity(configuration.isPressed ? 0.6 : 0.9))
-            .padding(.horizontal, 14)
-            .frame(height: 34)
-            .background(Palette.panel, in: RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-private struct ToolActionStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14))
-            .foregroundStyle(.white.opacity(configuration.isPressed ? 0.5 : 0.8))
-            .frame(width: 34, height: 34)
-            .background(Palette.panel, in: RoundedRectangle(cornerRadius: 8))
+    private func description(for action: ShortcutAction) -> String {
+        switch action {
+        case .area: L10n.tr("Kéo để chọn phần màn hình cần chụp")
+        case .window: L10n.tr("Chọn một cửa sổ đang mở")
+        case .fullScreen: L10n.tr("Chụp toàn bộ màn hình hiện tại")
+        case .scrolling: L10n.tr("Chọn vùng, cuộn tay hoặc tự cuộn rồi ghép thành ảnh dài")
+        case .captureText: L10n.tr("Nhận dạng chữ và đưa vào clipboard")
+        }
     }
 }

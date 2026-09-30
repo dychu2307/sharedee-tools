@@ -17,14 +17,22 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.graphics-design</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Duy Chu. Licensed under the Apache License 2.0.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>Sharedee Tools cần quyền ghi màn hình để chụp ảnh màn hình.</string>
+	<string>Sharedee Tools needs Screen Recording permission to capture your screen.</string>
+	<key>SharedeeGoogleOAuthClientID</key>
+	<string>$(SHAREDEE_GOOGLE_CLIENT_ID)</string>
+	<key>SharedeeGoogleOAuthClientSecret</key>
+	<string>$(SHAREDEE_GOOGLE_CLIENT_SECRET)</string>
+	<key>SharedeeRepositoryURL</key>
+	<string>https://github.com/dychu2307/sharedee-tools</string>
 </dict>
 </plist>

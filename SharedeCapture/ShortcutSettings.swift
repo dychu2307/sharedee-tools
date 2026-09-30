@@ -2,6 +2,21 @@ import AppKit
 import Carbon
 import SwiftUI
 
+enum PostCaptureAction: String, CaseIterable, Identifiable {
+    case copy, saveToFolder, uploadToDrive, thumbnailOnly
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .copy: L10n.tr("Sao chép vào clipboard")
+        case .saveToFolder: L10n.tr("Lưu vào thư mục trên Mac")
+        case .uploadToDrive: L10n.tr("Tải lên Google Drive")
+        case .thumbnailOnly: L10n.tr("Chỉ hiện thumbnail")
+        }
+    }
+}
+
 enum ShortcutAction: String, CaseIterable, Identifiable {
     case area, window, fullScreen, scrolling, captureText
 
@@ -9,11 +24,11 @@ enum ShortcutAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .area: "Chụp vùng chọn"
-        case .window: "Chụp cửa sổ"
-        case .fullScreen: "Chụp toàn màn hình"
-        case .scrolling: "Chụp cuộn"
-        case .captureText: "Chụp và sao chép chữ"
+        case .area: L10n.tr("Chụp vùng chọn")
+        case .window: L10n.tr("Chụp cửa sổ")
+        case .fullScreen: L10n.tr("Chụp toàn màn hình")
+        case .scrolling: L10n.tr("Chụp cuộn")
+        case .captureText: L10n.tr("Chụp và sao chép chữ")
         }
     }
 
@@ -83,19 +98,23 @@ struct KeyShortcut: Codable, Equatable {
 
 @MainActor
 final class ShortcutSettings: ObservableObject {
+    static let defaultMaxScrollHeight = 30_000
+    static let maxScrollHeightOptions = [10_000, 20_000, 30_000, 50_000]
     @Published private(set) var shortcuts: [ShortcutAction: KeyShortcut]
     @Published private(set) var errors: [ShortcutAction: String] = [:]
-    @Published var autoCopy: Bool {
-        didSet { UserDefaults.standard.set(autoCopy, forKey: "autoCopy") }
+    @Published var postCaptureAction: PostCaptureAction {
+        didSet { UserDefaults.standard.set(postCaptureAction.rawValue, forKey: "postCaptureAction") }
     }
+    @Published private(set) var saveFolderURL: URL?
     @Published var captureDelay: Int {
         didSet { UserDefaults.standard.set(captureDelay, forKey: "captureDelay") }
     }
     @Published var includeCursor: Bool {
         didSet { UserDefaults.standard.set(includeCursor, forKey: "includeCursor") }
     }
-    @Published var maxScrollFrames: Int {
-        didSet { UserDefaults.standard.set(maxScrollFrames, forKey: "maxScrollFrames") }
+    /// Longest scrolling capture, in output pixels.
+    @Published var maxScrollHeight: Int {
+        didSet { UserDefaults.standard.set(maxScrollHeight, forKey: "maxScrollHeight") }
     }
 
     private var manager: GlobalHotKeyManager?
@@ -109,10 +128,11 @@ final class ShortcutSettings: ObservableObject {
         shortcuts = Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map {
             ($0, saved[$0.rawValue] ?? Self.defaultShortcut(for: $0))
         })
-        autoCopy = defaults.object(forKey: "autoCopy") as? Bool ?? false
+        postCaptureAction = PostCaptureAction(rawValue: defaults.string(forKey: "postCaptureAction") ?? "") ?? .copy
+        saveFolderURL = defaults.string(forKey: "saveFolderPath").map { URL(fileURLWithPath: $0, isDirectory: true) }
         captureDelay = defaults.object(forKey: "captureDelay") as? Int ?? 0
         includeCursor = defaults.object(forKey: "includeCursor") as? Bool ?? false
-        maxScrollFrames = defaults.object(forKey: "maxScrollFrames") as? Int ?? 10
+        maxScrollHeight = defaults.object(forKey: "maxScrollHeight") as? Int ?? Self.defaultMaxScrollHeight
     }
 
     func activate(onAction: @escaping (ShortcutAction) -> Void) {
@@ -129,9 +149,14 @@ final class ShortcutSettings: ObservableObject {
         shortcuts[action] ?? Self.defaultShortcut(for: action)
     }
 
+    func setSaveFolder(_ url: URL) {
+        saveFolderURL = url
+        UserDefaults.standard.set(url.path, forKey: "saveFolderPath")
+    }
+
     func set(_ shortcut: KeyShortcut, for action: ShortcutAction) {
         guard !shortcuts.contains(where: { $0.key != action && $0.value == shortcut }) else {
-            errors[action] = "Tổ hợp này đã dùng cho một tác vụ khác."
+            errors[action] = L10n.tr("Tổ hợp này đã dùng cho một tác vụ khác.")
             return
         }
         shortcuts[action] = shortcut
@@ -192,7 +217,7 @@ final class ShortcutSettings: ObservableObject {
         for action in ShortcutAction.allCases {
             let result = manager.register(shortcut(for: action), action: action)
             if result != noErr {
-                errors[action] = "Phím tắt đang được macOS hoặc app khác sử dụng."
+                errors[action] = L10n.tr("Phím tắt đang được macOS hoặc app khác sử dụng.")
             }
         }
     }
@@ -295,7 +320,7 @@ final class RecorderView: NSView {
         (recording ? NSColor.systemTeal : NSColor(calibratedWhite: 0.36, alpha: 1)).setStroke()
         path.lineWidth = 1
         path.stroke()
-        let title = recording ? "Nhấn tổ hợp…" : shortcut.display
+        let title = recording ? L10n.tr("Nhấn tổ hợp…") : shortcut.display
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 13, weight: .medium),
             .foregroundColor: NSColor.white

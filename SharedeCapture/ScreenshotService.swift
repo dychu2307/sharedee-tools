@@ -5,10 +5,10 @@ enum CaptureMode: String {
 
     var title: String {
         switch self {
-        case .area: "Chọn vùng"
-        case .window: "Cửa sổ"
-        case .fullScreen: "Toàn màn hình"
-        case .scrolling: "Chụp cuộn"
+        case .area: L10n.tr("Chọn vùng")
+        case .window: L10n.tr("Cửa sổ")
+        case .fullScreen: L10n.tr("Toàn màn hình")
+        case .scrolling: L10n.tr("Chụp cuộn")
         }
     }
 
@@ -24,17 +24,29 @@ enum CaptureMode: String {
 
 enum CaptureError: LocalizedError {
     case cancelled
+    case permissionRequired
+    case restartRequired
     case failed
 
     var errorDescription: String? {
         switch self {
-        case .cancelled: "Đã hủy chụp ảnh"
-        case .failed: "Không thể chụp màn hình. Hãy kiểm tra quyền Ghi màn hình trong Cài đặt hệ thống."
+        case .cancelled: L10n.tr("Đã hủy chụp ảnh")
+        case .permissionRequired:
+            L10n.tr("Sharedee Tools chưa có quyền Ghi màn hình. Hãy bật quyền cho Sharedee Tools trong Cài đặt hệ thống.")
+        case .restartRequired:
+            L10n.tr("Đã cấp quyền Ghi màn hình. Hãy khởi động lại Sharedee Tools để quyền có hiệu lực.")
+        case .failed: L10n.tr("Không thể chụp màn hình. Hãy thử lại khi màn hình đang mở khóa.")
         }
     }
 }
 
 enum ScreenshotService {
+    static func ensurePermission() throws {
+        if CGPreflightScreenCaptureAccess() { return }
+        guard CGRequestScreenCaptureAccess() else { throw CaptureError.permissionRequired }
+        guard CGPreflightScreenCaptureAccess() else { throw CaptureError.restartRequired }
+    }
+
     static func capture(_ mode: CaptureMode, includeCursor: Bool = false) async throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("SharedeCapture-\(UUID().uuidString).png")
@@ -53,12 +65,13 @@ enum ScreenshotService {
             process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
             process.arguments = arguments
             process.terminationHandler = { process in
-                if FileManager.default.fileExists(atPath: url.path) {
+                if process.terminationStatus == 0,
+                   FileManager.default.fileExists(atPath: url.path) {
                     continuation.resume()
                 } else {
                     let permissionMissing = !CGPreflightScreenCaptureAccess()
-                    continuation.resume(throwing: mode == .fullScreen || permissionMissing
-                        ? CaptureError.failed : CaptureError.cancelled)
+                    continuation.resume(throwing: permissionMissing ? CaptureError.permissionRequired
+                        : mode == .fullScreen ? CaptureError.failed : CaptureError.cancelled)
                 }
             }
             do { try process.run() }

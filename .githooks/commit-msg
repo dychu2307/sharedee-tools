@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Rejects commit messages that do not follow Conventional Commits, which scripts/version.sh
+# relies on to bump the version. Enable once per clone with:
+#   git config core.hooksPath .githooks
+subject="$(sed -n '/^[^#]/{p;q;}' "$1")"
+pattern='^(feat|fix|perf|refactor|docs|build|ci|style|test|chore|revert)(\([a-z0-9._/-]+\))?!?: .+'
+if [[ "${subject}" =~ ${pattern} || "${subject}" =~ ^(Merge|Revert|fixup!|squash!) ]]; then
+  exit 0
+fi
+cat >&2 <<'MSG'
+Commit message must follow Conventional Commits, for example:
+  feat: add folder creation to Drive settings      (new feature  -> minor version)
+  fix(drive): send client secret on token refresh   (bug fix      -> patch version)
+  feat!: drop macOS 12 support                      (breaking     -> major version)
+Other types: perf, refactor, docs, build, ci, style, test, chore.
+MSG
+exit 1

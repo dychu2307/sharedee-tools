@@ -153,7 +153,8 @@ enum ClientSecretCheck: Equatable {
 }
 
 enum DriveKeychain {
-    private static let service = "com.sharedecapture.app.google-drive"
+    /// Per bundle ID, so a Debug build never reads or overwrites the release build's sign-in.
+    private static let service = (Bundle.main.bundleIdentifier ?? "com.sharedecapture.app") + ".google-drive"
 
     static func read(_ key: String) -> String? {
         let query: [String: Any] = [

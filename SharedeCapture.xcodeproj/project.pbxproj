@@ -511,6 +511,7 @@
 				PRODUCT_MODULE_NAME = SharedeCapture;
 				PRODUCT_NAME = "Sharedee Tools";
 				SDKROOT = macosx;
+				SHAREDEE_DISPLAY_NAME = "Sharedee Tools";
 				SHAREDEE_GOOGLE_CLIENT_ID = "";
 				SHAREDEE_GOOGLE_CLIENT_SECRET = "";
 			};
@@ -534,10 +535,11 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sharedecapture.app.dev;
 				PRODUCT_MODULE_NAME = SharedeCapture;
 				PRODUCT_NAME = "Sharedee Tools";
 				SDKROOT = macosx;
+				SHAREDEE_DISPLAY_NAME = "Sharedee Tools Dev";
 				SHAREDEE_GOOGLE_CLIENT_ID = "";
 				SHAREDEE_GOOGLE_CLIENT_SECRET = "";
 			};

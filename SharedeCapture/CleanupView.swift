@@ -8,10 +8,8 @@ struct CleanupView: View {
     let muted: Color
     @State private var expanded: Set<CleanupKind> = []
 
-    private static let colors = [Color(red: 0.31, green: 0.87, blue: 0.78),
-                                 Color(red: 0.35, green: 0.6, blue: 1),
-                                 Color(red: 0.72, green: 0.45, blue: 1)]
-    private static let gradient = LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+    private static let colors = ToolStyle.colors
+    private static let gradient = ToolStyle.gradient
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
@@ -311,6 +309,14 @@ struct CleanupView: View {
 
 // MARK: - Animated pieces
 
+/// Colours shared by the tool pages' hero animations and primary buttons.
+enum ToolStyle {
+    static let colors = [Color(red: 0.31, green: 0.87, blue: 0.78),
+                         Color(red: 0.35, green: 0.6, blue: 1),
+                         Color(red: 0.72, green: 0.45, blue: 1)]
+    static let gradient = LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+}
+
 /// The hero ring: soft pulses while idle, a spinning gradient arc while scanning, a filling
 /// arc while cleaning, and a glowing full ring once there is a result.
 private struct CleanupRing: View {
@@ -397,7 +403,7 @@ private struct RollingBytes: View, Animatable {
     }
 }
 
-private struct CheckmarkPop: View {
+struct CheckmarkPop: View {
     let gradient: LinearGradient
     @State private var shown = false
 
@@ -414,7 +420,7 @@ private struct CheckmarkPop: View {
 }
 
 /// Sparkles that fly out from the ring when cleaning finishes.
-private struct SparkleBurst: View {
+struct SparkleBurst: View {
     let colors: [Color]
     @State private var fired = false
 
@@ -439,7 +445,7 @@ private struct SparkleBurst: View {
     }
 }
 
-private struct GradientButtonStyle: ButtonStyle {
+struct GradientButtonStyle: ButtonStyle {
     let gradient: LinearGradient
     @Environment(\.isEnabled) private var isEnabled
 

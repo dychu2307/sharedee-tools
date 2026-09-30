@@ -9,13 +9,14 @@ private enum HomeStyle {
 }
 
 enum HomePage: Hashable {
-    case capture, quitApps, cleanup, settings(SettingsPage)
+    case capture, quitApps, cleanup, uninstaller, settings(SettingsPage)
 
     var title: String {
         switch self {
         case .capture: L10n.tr("Chụp ảnh")
         case .quitApps: L10n.tr("Thoát ứng dụng")
         case .cleanup: L10n.tr("Dọn dẹp")
+        case .uninstaller: L10n.tr("Gỡ ứng dụng")
         case .settings(let page): page.title
         }
     }
@@ -25,6 +26,7 @@ enum HomePage: Hashable {
         case .capture: "viewfinder"
         case .quitApps: "power"
         case .cleanup: "sparkles"
+        case .uninstaller: "xmark.bin"
         case .settings(let page): page.symbol
         }
     }
@@ -68,6 +70,7 @@ struct ContentView: View {
                             case .capture: capturePage
                             case .quitApps: QuitAppsView(accent: HomeStyle.accent, muted: HomeStyle.muted)
                             case .cleanup: CleanupView(accent: HomeStyle.accent, muted: HomeStyle.muted)
+                            case .uninstaller: UninstallerView(accent: HomeStyle.accent, muted: HomeStyle.muted)
                             case .settings: EmptyView()
                             }
                         }
@@ -108,7 +111,7 @@ struct ContentView: View {
                 .padding(.horizontal, 19)
                 .padding(.bottom, 10)
 
-            ForEach([HomePage.capture, .quitApps, .cleanup], id: \.self) { item in
+            ForEach([HomePage.capture, .quitApps, .cleanup, .uninstaller], id: \.self) { item in
                 Button { navigation.page = item } label: {
                     HStack(spacing: 11) {
                         Image(systemName: item.symbol)
@@ -186,6 +189,7 @@ struct ContentView: View {
         case .capture: L10n.tr("Chọn một thao tác để bắt đầu")
         case .quitApps: L10n.tr("Đóng nhanh các ứng dụng đang mở mà không cần khởi động lại máy")
         case .cleanup: L10n.tr("Quét và dọn các file tạm để lấy lại dung lượng ổ đĩa")
+        case .uninstaller: L10n.tr("Gỡ ứng dụng cùng các file nó để lại trong Thư viện")
         case .settings: ""
         }
     }

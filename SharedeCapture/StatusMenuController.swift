@@ -15,6 +15,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             CaptureMenuTool(runtime: runtime),
             QuitAppsMenuTool(quitter: runtime.quitter),
             CleanupMenuTool(runtime: runtime),
+            UninstallerMenuTool(runtime: runtime),
         ]
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()

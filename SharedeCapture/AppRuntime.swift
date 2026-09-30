@@ -16,6 +16,7 @@ final class AppRuntime {
     let navigation = MainNavigation()
     let quitter = AppQuitter()
     let cleanup = CleanupModel()
+    let uninstaller = UninstallerModel()
     private let quickAccess = QuickAccessController()
     private let toast = ToastController()
     private var statusMenu: StatusMenuController?
@@ -70,6 +71,7 @@ final class AppRuntime {
                     .environmentObject(navigation)
                     .environmentObject(quitter)
                     .environmentObject(cleanup)
+                    .environmentObject(uninstaller)
                     .preferredColorScheme(.dark)
             )
             mainCloseObserver = NotificationCenter.default.addObserver(
@@ -141,6 +143,11 @@ final class AppRuntime {
         navigation.page = .cleanup
         showMainWindow()
         if scan { cleanup.scan() }
+    }
+
+    func showUninstaller() {
+        navigation.page = .uninstaller
+        showMainWindow()
     }
 
     func showSettings() {

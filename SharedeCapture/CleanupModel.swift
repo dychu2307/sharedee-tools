@@ -308,7 +308,7 @@ enum CleanupScanner {
         }
     }
 
-    private static func allocatedSize(of url: URL, progress: (Int64, String) -> Void) -> Int64 {
+    static func allocatedSize(of url: URL, progress: (Int64, String) -> Void = { _, _ in }) -> Int64 {
         if let values = try? url.resourceValues(forKeys: sizeKeys), values.isRegularFile == true {
             return Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0)
         }

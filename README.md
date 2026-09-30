@@ -74,6 +74,17 @@ In **Settings → Google Drive**, paste a **Desktop app** OAuth Client ID and it
 
 A user-entered Client ID, client secret, and refresh token are stored in the user's macOS Keychain. The app requests Google's narrow `drive.file` scope. A Client ID and secret supplied at build time are visible in the app bundle. For a Desktop app client, Google does not treat the client secret as confidential either.
 
+## Distributing a DMG
+
+To build a DMG that opens on any Mac, sign it with a **Developer ID Application** certificate and notarize it. Store notarization credentials once, then run the release script:
+
+```sh
+xcrun notarytool store-credentials sharedee-notary --apple-id you@example.com --team-id TEAMID
+SHAREDEE_DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" scripts/release-dmg.sh
+```
+
+The script builds a universal Release app, signs it with the hardened runtime, packages it with an Applications shortcut, notarizes and staples the DMG, and writes `dist/Sharedee-Tools-<version>.dmg`. Set `SHAREDEE_NOTARIZE=0` to skip notarization for a local test.
+
 ## Versioning and app icons
 
 Versions follow [Semantic Versioning](https://semver.org) and are computed from git at build time: the latest `vX.Y.Z` tag, bumped by the [Conventional Commits](https://www.conventionalcommits.org) made since (`feat:` → minor, `fix:` and others → patch, `feat!:` → major). The build number is the commit count. Run `scripts/version.sh` to see the current version; it appears in **Settings → General → About**. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md). The app icon and the menu bar template icon are drawn by the scripts in `scripts/app-icon/`; see the comment at the top of each script for how to regenerate the assets.

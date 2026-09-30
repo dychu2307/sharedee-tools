@@ -60,6 +60,17 @@ Vào **Cài đặt → Google Drive**, dán OAuth Client ID loại **Desktop app
 
 Client ID, client secret do người dùng nhập và refresh token được lưu trong macOS Keychain. App dùng quyền `drive.file`; ảnh chỉ tải lên khi bạn chọn nút **Drive** hoặc đặt đó làm hành động mặc định. Client ID và secret đưa vào lúc build sẽ hiện trong bundle.
 
+## Đóng gói DMG để cài trên máy khác
+
+Để DMG mở được trên mọi máy Mac, cần ký bằng chứng chỉ **Developer ID Application** và notarize. Lưu thông tin notarize một lần, rồi chạy script phát hành:
+
+```sh
+xcrun notarytool store-credentials sharedee-notary --apple-id you@example.com --team-id TEAMID
+SHAREDEE_DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" scripts/release-dmg.sh
+```
+
+Script build bản Release chạy được cả Intel lẫn Apple Silicon, ký với hardened runtime, đóng gói kèm lối tắt Applications, notarize và gắn dấu vào DMG, rồi ghi ra `dist/Sharedee-Tools-<phiên bản>.dmg`. Đặt `SHAREDEE_NOTARIZE=0` để bỏ qua notarize khi thử trên máy.
+
 ## Phiên bản và icon
 
 Phiên bản theo chuẩn [Semantic Versioning](https://semver.org) và được tính tự động từ git lúc build: lấy tag `vX.Y.Z` gần nhất, rồi tăng theo các commit [Conventional Commits](https://www.conventionalcommits.org) sau đó (`feat:` tăng số giữa, `fix:` và loại khác tăng số cuối, `feat!:` tăng số đầu). Số build là tổng số commit. Chạy `scripts/version.sh` để xem phiên bản hiện tại; phiên bản hiển thị ở **Cài đặt → Chung → Thông tin**. Xem [CONTRIBUTING.md](CONTRIBUTING.md) và [CHANGELOG.md](CHANGELOG.md). Icon app và icon thanh menu được vẽ bằng các script trong `scripts/app-icon/`; xem chú thích đầu mỗi script để tạo lại.

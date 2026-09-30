@@ -233,7 +233,7 @@ enum CleanupScanner {
         var listChildren = true
     }
 
-    private static let largeFileThreshold: Int64 = 200 * 1024 * 1024
+    static let largeFileThreshold: Int64 = 200 * 1024 * 1024
     /// Caches that belong to iCloud sync; clearing them forces a full resync.
     private static let skippedNames: Set<String> = ["com.apple.bird", "CloudKit", "com.apple.cloudd"]
     private static let sizeKeys: Set<URLResourceKey> = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
@@ -255,16 +255,18 @@ enum CleanupScanner {
         }
     }
 
-    static func scan(_ kind: CleanupKind, report: @escaping @Sendable (Int64, String) -> Void) async -> CleanupCategory {
+    static func scan(_ kind: CleanupKind,
+                     home: URL = FileManager.default.homeDirectoryForCurrentUser,
+                     largeFileThreshold: Int64 = largeFileThreshold,
+                     report: @escaping @Sendable (Int64, String) -> Void = { _, _ in }) async -> CleanupCategory {
         var category = CleanupCategory(kind: kind)
-        let home = FileManager.default.homeDirectoryForCurrentUser
         let throttle = Throttle()
         var total: Int64 = 0
         for root in roots(for: kind) {
             let url = home.appendingPathComponent(root.path, isDirectory: true)
             guard FileManager.default.fileExists(atPath: url.path) else { continue }
             if kind == .largeFiles {
-                category.items += largeFiles(in: url) { path in
+                category.items += largeFiles(in: url, threshold: largeFileThreshold) { path in
                     if throttle.ready() { report(total, path) }
                 }
                 continue
@@ -325,7 +327,7 @@ enum CleanupScanner {
 
     /// Regular files at or above the threshold. Packages such as Photos libraries and apps are
     /// skipped whole, so the tool never offers to break one apart.
-    private static func largeFiles(in url: URL, progress: (String) -> Void) -> [CleanupItem] {
+    private static func largeFiles(in url: URL, threshold: Int64, progress: (String) -> Void) -> [CleanupItem] {
         guard let enumerator = FileManager.default.enumerator(
             at: url, includingPropertiesForKeys: Array(sizeKeys),
             options: [.skipsHiddenFiles, .skipsPackageDescendants], errorHandler: { _, _ in true })
@@ -336,7 +338,7 @@ enum CleanupScanner {
             progress(file.path)
             guard let values = try? file.resourceValues(forKeys: sizeKeys), values.isRegularFile == true else { continue }
             let size = Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0)
-            if size >= largeFileThreshold { items.append(CleanupItem(url: file, size: size)) }
+            if size >= threshold { items.append(CleanupItem(url: file, size: size)) }
         }
         return items
     }

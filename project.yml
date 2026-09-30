@@ -16,6 +16,9 @@ targets:
     postBuildScripts:
       - name: Set version from git
         script: '"${SRCROOT}/scripts/set-bundle-version.sh"'
+        # Declaring the processed Info.plist as input makes Xcode run this after it is written.
+        inputFiles:
+          - $(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)
         basedOnDependencyAnalysis: false
     info:
       path: SharedeCapture/Info.plist

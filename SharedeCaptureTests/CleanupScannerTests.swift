@@ -127,6 +127,61 @@ final class CleanupScannerTests: XCTestCase {
         XCTAssertFalse(removed)
     }
 
+    func testInstallersAreFoundAndNotCountedAgainAsLargeFiles() async throws {
+        try write("Downloads/Tool-1.2.dmg", bytes: 2 * 1024 * 1024)
+        try write("Downloads/Old/Driver.PKG", bytes: 4096)
+        try write("Downloads/Xcode_16.xip", bytes: 4096)
+        try write("Downloads/notes.txt", bytes: 4096)
+        try write("Desktop/Other.dmg", bytes: 4096)
+
+        let installers = await CleanupScanner.scan(.installers, home: home)
+        let large = await CleanupScanner.scan(.largeFiles, home: home, largeFileThreshold: 1024 * 1024)
+
+        XCTAssertEqual(Set(installers.items.map(\.url.lastPathComponent)), ["Tool-1.2.dmg", "Driver.PKG", "Xcode_16.xip"])
+        XCTAssertTrue(large.items.isEmpty)
+    }
+
+    func testOnlyNodeModulesOfStaleProjectsAreOffered() async throws {
+        try write("Developer/old-app/package.json", bytes: 100)
+        try write("Developer/old-app/node_modules/left-pad/index.js", bytes: 4096)
+        try write("Developer/old-app/node_modules/left-pad/node_modules/dep/index.js", bytes: 4096)
+        try write("Developer/new-app/package.json", bytes: 100)
+        try write("Developer/new-app/node_modules/react/index.js", bytes: 4096)
+        try write("Projects/group/legacy/package.json", bytes: 100)
+        try write("Projects/group/legacy/node_modules/lodash/index.js", bytes: 4096)
+        let longAgo = Date().addingTimeInterval(-60 * 24 * 60 * 60)
+        for path in ["Developer/old-app/package.json", "Projects/group/legacy/package.json"] {
+            try FileManager.default.setAttributes([.modificationDate: longAgo], ofItemAtPath: url(path).path)
+        }
+
+        let category = await CleanupScanner.scan(.nodeModules, home: home)
+
+        XCTAssertEqual(Set(category.items.map { $0.url.standardizedFileURL.path }),
+                       Set(["Developer/old-app/node_modules", "Projects/group/legacy/node_modules"]
+                            .map { url($0).standardizedFileURL.path }))
+        XCTAssertEqual(Set(category.items.map(\.name)), ["old-app / node_modules", "legacy / node_modules"])
+    }
+
+    func testBackupsAreLabelledWithTheDeviceName() async throws {
+        try write("Library/Application Support/MobileSync/Backup/00008101-ABC/Manifest.db", bytes: 4096)
+        let info: NSDictionary = ["Device Name": "Test iPhone"]
+        info.write(to: url("Library/Application Support/MobileSync/Backup/00008101-ABC/Info.plist"), atomically: true)
+
+        let category = await CleanupScanner.scan(.iosBackups, home: home)
+
+        XCTAssertEqual(category.items.map(\.name), ["Test iPhone"])
+    }
+
+    func testOnlyJunkIsSelectedByDefaultAndOnlyJunkIsDeletedOutright() {
+        let junk: Set<CleanupKind> = [.userCaches, .logs, .xcode, .devCaches]
+        for kind in CleanupKind.allCases {
+            XCTAssertEqual(kind.selectedByDefault, junk.contains(kind), "\(kind)")
+        }
+        for kind: CleanupKind in [.installers, .iosBackups, .largeFiles] {
+            XCTAssertFalse(kind.deletesPermanently, "\(kind)")
+        }
+    }
+
     @MainActor
     func testRunningAppsAreFoundOnlyForSelectedCaches() {
         // The test host is itself a running app, so its cache folder stands in for any app's.

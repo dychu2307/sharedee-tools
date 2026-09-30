@@ -1,11 +1,12 @@
 import AppKit
 import SwiftUI
 
-/// What the cleanup tool looks for. Junk kinds hold files apps rebuild on their own, so they
-/// are deleted outright (moving them to the Trash would not free any space). Large files are
-/// the user's own documents, so they only ever go to the Trash and are never picked by default.
+/// What the cleanup tool looks for. Junk kinds hold files that get rebuilt on their own, so they
+/// are deleted outright (moving them to the Trash would not free any space). The user's own
+/// files (installers, backups, large files) only ever go to the Trash. Anything that is not
+/// plain junk is opt-in: never picked by default.
 enum CleanupKind: String, CaseIterable, Identifiable {
-    case userCaches, logs, xcode, devCaches, trash, largeFiles
+    case userCaches, logs, xcode, devCaches, nodeModules, installers, iosBackups, trash, largeFiles
 
     var id: String { rawValue }
 
@@ -15,6 +16,9 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         case .logs: L10n.tr("Nhật ký hệ thống")
         case .xcode: L10n.tr("Dữ liệu Xcode")
         case .devCaches: L10n.tr("Bộ nhớ đệm lập trình")
+        case .nodeModules: L10n.tr("node_modules cũ")
+        case .installers: L10n.tr("Bộ cài đặt")
+        case .iosBackups: L10n.tr("Bản sao lưu iPhone, iPad")
         case .trash: L10n.tr("Thùng rác")
         case .largeFiles: L10n.tr("File lớn")
         }
@@ -26,6 +30,9 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         case .logs: L10n.tr("Nhật ký và báo cáo lỗi cũ")
         case .xcode: L10n.tr("DerivedData, DeviceSupport, cache simulator")
         case .devCaches: L10n.tr("npm, Gradle, Yarn, Bun")
+        case .nodeModules: L10n.tr("Project không đụng tới hơn 30 ngày · cài lại bằng npm install")
+        case .installers: L10n.tr("File .dmg, .pkg, .xip trong Downloads · chuyển vào Thùng rác")
+        case .iosBackups: L10n.tr("Bản sao lưu thiết bị trên máy này · chuyển vào Thùng rác")
         case .trash: L10n.tr("Xoá vĩnh viễn các mục trong Thùng rác")
         case .largeFiles: L10n.tr("Từ 200 MB trong Downloads, Desktop, Documents, Movies · chuyển vào Thùng rác")
         }
@@ -37,6 +44,9 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         case .logs: "doc.text.magnifyingglass"
         case .xcode: "hammer"
         case .devCaches: "terminal"
+        case .nodeModules: "cube.box"
+        case .installers: "opticaldiscdrive"
+        case .iosBackups: "iphone"
         case .trash: "trash"
         case .largeFiles: "doc.richtext"
         }
@@ -48,6 +58,9 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         case .logs: .orange
         case .xcode: Color(red: 0.35, green: 0.6, blue: 1)
         case .devCaches: .purple
+        case .nodeModules: .green
+        case .installers: .mint
+        case .iosBackups: .cyan
         case .trash: .pink
         case .largeFiles: .yellow
         }
@@ -61,15 +74,28 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         }
     }
 
-    var deletesPermanently: Bool { self != .largeFiles }
-    var selectedByDefault: Bool { self != .trash && self != .largeFiles }
+    var deletesPermanently: Bool {
+        switch self {
+        case .installers, .iosBackups, .largeFiles: false
+        default: true
+        }
+    }
+
+    var selectedByDefault: Bool {
+        switch self {
+        case .userCaches, .logs, .xcode, .devCaches: true
+        default: false
+        }
+    }
 }
 
 struct CleanupItem: Identifiable, Hashable {
     let url: URL
     let size: Int64
+    /// A friendlier name than the file name, e.g. the device a backup belongs to.
+    var label: String?
     var id: URL { url }
-    var name: String { FileManager.default.displayName(atPath: url.path) }
+    var name: String { label ?? FileManager.default.displayName(atPath: url.path) }
     var displayPath: String { (url.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath }
 }
 
@@ -133,7 +159,7 @@ final class CleanupModel: ObservableObject {
                 }
                 category.items.sort { $0.size > $1.size }
                 // Give each step a beat so the scan reads as progress instead of a flash.
-                await Self.pause(until: kindStarted.addingTimeInterval(0.35))
+                await Self.pause(until: kindStarted.addingTimeInterval(0.25))
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     categories.append(category)
                     finishedKinds.insert(kind)
@@ -279,6 +305,11 @@ enum CleanupScanner {
     }
 
     static let largeFileThreshold: Int64 = 200 * 1024 * 1024
+    static let staleProjectAge: TimeInterval = 30 * 24 * 60 * 60
+    static let installerExtensions: Set<String> = ["dmg", "pkg", "mpkg", "xip"]
+    /// Folders where people usually keep code; searched for node_modules a few levels deep.
+    private static let projectFolders = ["Developer", "Projects", "Code", "code", "src", "dev", "repos",
+                                         "GitHub", "Sites", "work", "Documents", "Desktop"]
     /// Caches that belong to iCloud sync; clearing them forces a full resync.
     private static let skippedNames: Set<String> = ["com.apple.bird", "CloudKit", "com.apple.cloudd"]
     private static let sizeKeys: Set<URLResourceKey> = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileAllocatedSizeKey]
@@ -295,6 +326,9 @@ enum CleanupScanner {
                           Root(path: ".gradle/caches", listChildren: false),
                           Root(path: ".yarn/berry/cache", listChildren: false),
                           Root(path: ".bun/install/cache", listChildren: false)]
+        case .nodeModules: projectFolders.map { Root(path: $0) }
+        case .installers: [Root(path: "Downloads")]
+        case .iosBackups: [Root(path: "Library/Application Support/MobileSync/Backup")]
         case .trash: [Root(path: ".Trash")]
         case .largeFiles: ["Downloads", "Desktop", "Documents", "Movies"].map { Root(path: $0) }
         }
@@ -303,18 +337,39 @@ enum CleanupScanner {
     static func scan(_ kind: CleanupKind,
                      home: URL = FileManager.default.homeDirectoryForCurrentUser,
                      largeFileThreshold: Int64 = largeFileThreshold,
+                     staleAfter: TimeInterval = staleProjectAge,
                      report: @escaping @Sendable (Int64, String) -> Void = { _, _ in }) async -> CleanupCategory {
         var category = CleanupCategory(kind: kind)
         let throttle = Throttle()
         var total: Int64 = 0
+        var visited: Set<String> = []
         for root in roots(for: kind) {
             let url = home.appendingPathComponent(root.path, isDirectory: true)
-            guard FileManager.default.fileExists(atPath: url.path) else { continue }
-            if kind == .largeFiles {
-                category.items += largeFiles(in: url, threshold: largeFileThreshold) { path in
+            guard FileManager.default.fileExists(atPath: url.path),
+                  // "Code" and "code" are the same folder on a case-insensitive disk.
+                  visited.insert(url.resolvingSymlinksInPath().path.lowercased()).inserted else { continue }
+            switch kind {
+            case .largeFiles:
+                category.items += files(in: url) { file, size in
+                    size >= largeFileThreshold && !installerExtensions.contains(file.pathExtension.lowercased())
+                } progress: { path in
                     if throttle.ready() { report(total, path) }
                 }
                 continue
+            case .installers:
+                category.items += files(in: url) { file, _ in
+                    installerExtensions.contains(file.pathExtension.lowercased())
+                } progress: { path in
+                    if throttle.ready() { report(total, path) }
+                }
+                continue
+            case .nodeModules:
+                category.items += staleNodeModules(in: url, olderThan: staleAfter) { path in
+                    if throttle.ready() { report(total, path) }
+                }
+                continue
+            default:
+                break
             }
             let targets: [URL]
             if root.listChildren {
@@ -334,7 +389,10 @@ enum CleanupScanner {
                     if throttle.ready() { report(base + bytes, path) }
                 }
                 total += size
-                if size > 0 { category.items.append(CleanupItem(url: target, size: size)) }
+                if size > 0 {
+                    category.items.append(CleanupItem(url: target, size: size,
+                                                      label: kind == .iosBackups ? backupLabel(target) : nil))
+                }
             }
         }
         return category
@@ -370,9 +428,10 @@ enum CleanupScanner {
         return total
     }
 
-    /// Regular files at or above the threshold. Packages such as Photos libraries and apps are
+    /// Visible regular files that pass `include`. Packages such as Photos libraries and apps are
     /// skipped whole, so the tool never offers to break one apart.
-    private static func largeFiles(in url: URL, threshold: Int64, progress: (String) -> Void) -> [CleanupItem] {
+    private static func files(in url: URL, include: (URL, Int64) -> Bool,
+                              progress: (String) -> Void) -> [CleanupItem] {
         guard let enumerator = FileManager.default.enumerator(
             at: url, includingPropertiesForKeys: Array(sizeKeys),
             options: [.skipsHiddenFiles, .skipsPackageDescendants], errorHandler: { _, _ in true })
@@ -383,9 +442,50 @@ enum CleanupScanner {
             progress(file.path)
             guard let values = try? file.resourceValues(forKeys: sizeKeys), values.isRegularFile == true else { continue }
             let size = Int64(values.totalFileAllocatedSize ?? values.fileAllocatedSize ?? 0)
-            if size >= threshold { items.append(CleanupItem(url: file, size: size)) }
+            if include(file, size) { items.append(CleanupItem(url: file, size: size)) }
         }
         return items
+    }
+
+    /// `node_modules` folders of projects whose `package.json` hasn't changed for a while.
+    /// Searches a few levels deep and never descends into a node_modules folder itself.
+    private static func staleNodeModules(in url: URL, olderThan age: TimeInterval,
+                                         progress: (String) -> Void) -> [CleanupItem] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url, includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants], errorHandler: { _, _ in true })
+        else { return [] }
+        let cutoff = Date().addingTimeInterval(-age)
+        var items: [CleanupItem] = []
+        for case let folder as URL in enumerator {
+            if Task.isCancelled { break }
+            guard (try? folder.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            if enumerator.level > 6 {
+                enumerator.skipDescendants()
+                continue
+            }
+            guard folder.lastPathComponent == "node_modules" else { continue }
+            enumerator.skipDescendants()
+            progress(folder.path)
+            let project = folder.deletingLastPathComponent()
+            let manifest = project.appendingPathComponent("package.json")
+            guard let modified = (try? manifest.resourceValues(forKeys: [.contentModificationDateKey]))?
+                .contentModificationDate, modified < cutoff else { continue }
+            let size = allocatedSize(of: folder)
+            if size > 0 {
+                items.append(CleanupItem(url: folder, size: size,
+                                         label: L10n.format("%@ / node_modules", project.lastPathComponent)))
+            }
+        }
+        return items
+    }
+
+    /// The device name and date from a backup's Info.plist, e.g. "My iPhone · Mar 12, 2026".
+    private static func backupLabel(_ backup: URL) -> String? {
+        guard let info = NSDictionary(contentsOf: backup.appendingPathComponent("Info.plist")),
+              let device = info["Device Name"] as? String else { return nil }
+        guard let date = info["Last Backup Date"] as? Date else { return device }
+        return device + " · " + DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .none)
     }
 
     /// Limits progress reports to about 20 a second so the UI isn't flooded.

@@ -2,11 +2,13 @@
 
 [English](README.md)
 
-App chụp và chú thích ảnh màn hình dành cho macOS 12 trở lên, gồm cả máy Mac dùng chip Intel (x86_64) và Apple Silicon (arm64). Mở `Sharedee Tools.app` để dùng ngay hoặc mở `SharedeCapture.xcodeproj` để chỉnh sửa bằng Xcode. Khi khởi động, app mở cửa sổ chính với menu công cụ và đồng thời chạy trên thanh menu. Đóng cửa sổ chính không thoát app; chọn **Mở Sharedee Tools** trên thanh menu để mở lại.
+Bộ công cụ cho macOS 12 trở lên, chạy trên thanh menu và trong một cửa sổ chính: chụp và chú thích ảnh màn hình, thoát nhiều ứng dụng cùng lúc, dọn dẹp dung lượng ổ đĩa, gỡ ứng dụng kèm file sót lại. Hỗ trợ cả máy Mac dùng chip Intel (x86_64) và Apple Silicon (arm64). Mở `Sharedee Tools.app` để dùng ngay hoặc mở `SharedeCapture.xcodeproj` để chỉnh sửa bằng Xcode. Khi khởi động, app mở cửa sổ chính và đồng thời chạy trên thanh menu. Sidebar liệt kê các công cụ (Chụp ảnh, Thoát ứng dụng, Dọn dẹp, Gỡ ứng dụng); menu trên thanh menu có một submenu cho mỗi công cụ. Đóng cửa sổ chính không thoát app; chọn **Mở Sharedee Tools** trên thanh menu để mở lại.
 
 Sau khi chụp, thumbnail xuất hiện ở góc dưới bên phải màn hình. Nếu chụp nhiều ảnh, các thumbnail xếp thành danh sách theo thứ tự chụp, ảnh mới nhất ở dưới cùng; có thể cuộn để xem ảnh cũ. Mỗi thumbnail có nút **Sao chép**, **Chỉnh sửa**, **Lưu** và **Drive** dành riêng cho ảnh đó. Khi tải lên Drive, thumbnail hiện trạng thái đang tải, đã tải hoặc lỗi, và mỗi lần bấm chỉ tải một lần. Bấm dấu × để đóng từng thumbnail. **Chỉnh sửa** mở bảng nổi gọn theo kích thước ảnh, chỉ gồm ảnh và công cụ chú thích. Cài đặt nằm trong cửa sổ chính; chọn **Chung**, **Phím tắt** hoặc **Google Drive** ở sidebar. Mục **Chung** có ngôn ngữ, tùy chọn **Mở Sharedee Tools khi đăng nhập** và phiên bản app trong phần **Thông tin**; menu trên thanh menu cũng có **Giới thiệu Sharedee Tools**. Khi cửa sổ chính hoặc bảng biên tập đang mở, Sharedee Tools xuất hiện trong Dock và ⌘Tab; cửa sổ vẫn mở khi chuyển sang app khác. Trang Cài đặt giữ nguyên khi chụp, nên có thể chụp chính trang đó. Bảng biên tập tự đóng sau khi **Sao chép**, **Lưu** hoặc **Tải lên Drive** thành công; nếu hủy hộp thoại lưu, bảng vẫn mở.
 
 ## Tính năng
+
+### Chụp ảnh
 
 - Chụp vùng chọn, cửa sổ, toàn màn hình và chụp cuộn một vùng tùy chọn (cuộn tay hoặc tự cuộn).
 - Thêm mũi tên, hình chữ nhật, hình elip, bút vẽ, tô sáng, chữ, vùng làm mờ hoặc vùng che kín.
@@ -15,7 +17,31 @@ Sau khi chụp, thumbnail xuất hiện ở góc dưới bên phải màn hình.
 - **Chụp và sao chép chữ:** chọn một vùng, chữ trong vùng đó được đưa thẳng vào clipboard. Chữ được nhận dạng ngay trên máy bằng Vision của Apple (tiếng Việt, tiếng Anh và ngôn ngữ hệ thống). Một thông báo nhỏ cho biết đã sao chép gì; ảnh chụp để lấy chữ không được giữ lại, tải lên hay lưu. Từ macOS 13, nút **Live Text** trong cửa sổ chỉnh sửa cho phép bôi đen và sao chép một phần chữ trên ảnh.
 - Cài đặt phím tắt toàn hệ thống, hẹn giờ chụp, hành động mặc định sau khi chụp và giới hạn chiều dài ảnh cuộn. Mặc định ảnh được sao chép vào clipboard.
 - Chọn thư mục lưu trên Mac; có thể kết nối Google Drive bằng OAuth Client ID riêng, tạo thư mục mới hoặc đổi thư mục tải lên ngay trong Cài đặt.
+- Ảnh vừa chụp nằm ngay trên trang Chụp ảnh và trong **Chụp màn hình → Ảnh vừa chụp** trên thanh menu.
+
+### Thoát ứng dụng
+
+- Xem mọi ứng dụng đang mở; thoát tất cả, thoát từng ứng dụng, hoặc tick chọn nhiều ứng dụng rồi thoát cùng lúc. Ứng dụng vẫn hỏi lưu dữ liệu chưa lưu trước khi đóng.
+- Giữ **⌥** để **Thoát** thành **Buộc thoát**, cả trong menu lẫn cửa sổ.
+- **Thoát tất cả trừ** ứng dụng bạn đang dùng.
+- Ghim một ứng dụng để **Thoát tất cả** luôn bỏ qua nó. Finder và Sharedee Tools không bao giờ bị thoát.
+
+### Dọn dẹp
+
+- Quét bộ nhớ đệm ứng dụng, nhật ký, dữ liệu Xcode (DerivedData, DeviceSupport, cache simulator), cache lập trình (npm, Gradle, Yarn, Bun), `node_modules` cũ, bộ cài đặt trong Downloads, bản sao lưu iPhone và iPad, Thùng rác và file lớn; xem lại trước khi dọn.
+- Chỉ rác tự tạo lại được mới được chọn sẵn và bị xoá hẳn. Bộ cài đặt, bản sao lưu và file lớn phải tự chọn và được chuyển vào Thùng rác; `node_modules` cũ phải tự chọn và bị xoá vì `npm install` sẽ tạo lại.
+- Cảnh báo khi cache đã chọn thuộc về ứng dụng đang chạy và gợi ý thoát trước. Hiển thị dung lượng ổ đĩa và phần sẽ được giải phóng.
+
+### Gỡ ứng dụng
+
+- Chọn ứng dụng trong `/Applications` và `~/Applications` (hoặc kéo thả file `.app`) để xem các file nó để lại trong `~/Library`: Application Support, Caches, Preferences, Containers, Group Containers, trạng thái cửa sổ, launch agent…
+- File được tìm theo bundle ID. Thư mục chỉ trùng tên ứng dụng được gắn nhãn và không chọn sẵn. Ứng dụng của macOS và chính Sharedee Tools không bao giờ xuất hiện.
+- Ứng dụng đang chạy sẽ được yêu cầu thoát trước; mọi thứ được chuyển vào Thùng rác nên vẫn khôi phục được.
+
+### Chung
+
 - Tự mở khi đăng nhập (macOS 13 trở lên); giao diện tiếng Anh hoặc tiếng Việt.
+- Dọn dẹp sẽ xin quyền truy cập Downloads, Desktop và Documents ở lần quét đầu. Dọn Thùng rác và bản sao lưu iPhone cần quyền **Truy cập toàn bộ ổ đĩa**; trang Dọn dẹp có nút mở cài đặt khi thiếu quyền.
 
 ## Phím tắt mặc định
 
@@ -35,7 +61,7 @@ Gọi **Chụp cuộn** bằng menu bar hoặc phím tắt, kéo chọn vùng c�
 
 ## Build
 
-Chạy scheme **SharedeCapture** trong Xcode. Bản chạy từ Xcode được ký bằng Apple Development để giữ quyền qua các lần build. Nếu fork dự án, đổi **Development Team** trong phần Signing của Xcode sang tài khoản của bạn. File `project.yml` là cấu hình XcodeGen; nếu chỉnh file này, chạy `xcodegen generate` trước khi build.
+Chạy scheme **SharedeCapture** trong Xcode. Bản chạy từ Xcode được ký bằng Apple Development để giữ quyền qua các lần build. Bản Debug dùng bundle ID riêng `com.sharedecapture.app.dev` và hiện tên **Sharedee Tools Dev**, nên quyền hệ thống và đăng nhập Google Drive của nó tách biệt với bản phát hành. Nếu fork dự án, đổi **Development Team** trong phần Signing của Xcode sang tài khoản của bạn. File `project.yml` là cấu hình XcodeGen; nếu chỉnh file này, chạy `xcodegen generate` trước khi build.
 
 ### Giữ quyền Ghi màn hình qua nhiều phiên bản
 

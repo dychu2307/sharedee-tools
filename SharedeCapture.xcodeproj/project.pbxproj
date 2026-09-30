@@ -29,6 +29,7 @@
 		77B5003AE9FFC5D6778797FB /* QuitAppsMenuTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1CDAA244A0BE90C97E1F1E /* QuitAppsMenuTool.swift */; };
 		7F6BCD416693F66B1FAB574B /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7011CC68763E496F059C97B0 /* GoogleDriveService.swift */; };
 		84D58F718ACDE57930D8E5E7 /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342E255BD2658C27FB6DA401 /* AnnotationTests.swift */; };
+		8EDCB5EDAB0CEDC9CC32A09B /* AppQuitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1001BE324C9B5BF2B815F501 /* AppQuitterTests.swift */; };
 		936E7F45A851682AB7C8BC04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BED30380E579B0E458DD860 /* SettingsView.swift */; };
 		937132C98A9F7E2400A6E0D6 /* QuickAccessController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4773549D824CDF2824EE8125 /* QuickAccessController.swift */; };
 		9CAED4619625AC37AE2DF985 /* GoogleDriveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4EAA87CBAE6CB5B9F1279F /* GoogleDriveTests.swift */; };
@@ -69,6 +70,7 @@
 		0A1CDAA244A0BE90C97E1F1E /* QuitAppsMenuTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitAppsMenuTool.swift; sourceTree = "<group>"; };
 		0ECF6F7B2E1AE0D49000CD85 /* Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Annotation.swift; sourceTree = "<group>"; };
 		0FC4432ACA98AB8CD83929BC /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
+		1001BE324C9B5BF2B815F501 /* AppQuitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppQuitterTests.swift; sourceTree = "<group>"; };
 		10491CFD1A1BE84B909892D8 /* CleanupScannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupScannerTests.swift; sourceTree = "<group>"; };
 		19450486A226B1277609BD0B /* UninstallerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UninstallerModel.swift; sourceTree = "<group>"; };
 		29C3B1BC7AA09AE5AAE30924 /* CompactEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactEditorView.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 			isa = PBXGroup;
 			children = (
 				342E255BD2658C27FB6DA401 /* AnnotationTests.swift */,
+				1001BE324C9B5BF2B815F501 /* AppQuitterTests.swift */,
 				67FDD08AF1F6D2B7CA56546B /* AppUninstallerTests.swift */,
 				10491CFD1A1BE84B909892D8 /* CleanupScannerTests.swift */,
 				3A4EAA87CBAE6CB5B9F1279F /* GoogleDriveTests.swift */,
@@ -308,6 +311,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84D58F718ACDE57930D8E5E7 /* AnnotationTests.swift in Sources */,
+				8EDCB5EDAB0CEDC9CC32A09B /* AppQuitterTests.swift in Sources */,
 				63EDBC282543B5F47A947FCF /* AppUninstallerTests.swift in Sources */,
 				CD12F1FE55AA26A2C9E2AB40 /* CleanupScannerTests.swift in Sources */,
 				9CAED4619625AC37AE2DF985 /* GoogleDriveTests.swift in Sources */,

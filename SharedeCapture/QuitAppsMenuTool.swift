@@ -3,7 +3,7 @@ import AppKit
 @MainActor
 final class QuitAppsMenuTool: MenuBarTool {
     private let quitter: AppQuitter
-    private weak var quitSelectedItem: NSMenuItem?
+    private var quitSelectedItems: [(item: NSMenuItem, force: Bool)] = []
 
     init(quitter: AppQuitter) {
         self.quitter = quitter
@@ -19,54 +19,80 @@ final class QuitAppsMenuTool: MenuBarTool {
             menu.addDisabledItem(L10n.tr("Không có ứng dụng nào đang mở"))
             return
         }
-        menu.addItem(ActionMenuItem(L10n.format("Thoát tất cả (%ld)", apps.count),
-                                    symbol: "xmark.circle") { [quitter] in
-            quitter.quitAll()
-        })
-        let quitSelected = ActionMenuItem("", symbol: "checkmark.circle") { [quitter] in
-            quitter.quitSelected()
+        // Each action has a ⌥ alternate that force quits; macOS swaps them while ⌥ is held.
+        let all = quitter.quitAllTargets()
+        addPair(to: menu, symbol: "xmark.circle", enabled: !all.isEmpty,
+                title: { L10n.format($0 ? "Buộc thoát tất cả (%ld)" : "Thoát tất cả (%ld)", all.count) },
+                action: { [quitter] force in quitter.quitAll(force: force) })
+        if let current = quitter.lastActiveApp, all.contains(current) {
+            let others = quitter.quitAllTargets(keeping: current)
+            let name = current.localizedName ?? ""
+            addPair(to: menu, symbol: "xmark.circle", enabled: !others.isEmpty,
+                    title: { L10n.format($0 ? "Buộc thoát tất cả trừ %@ (%ld)" : "Thoát tất cả trừ %@ (%ld)",
+                                         name, others.count) },
+                    action: { [quitter] force in quitter.quitAll(keeping: current, force: force) })
         }
-        menu.addItem(quitSelected)
-        quitSelectedItem = quitSelected
-        updateQuitSelectedItem()
+        quitSelectedItems = addPair(to: menu, symbol: "checkmark.circle", enabled: true,
+                                    title: { _ in "" },
+                                    action: { [quitter] force in quitter.quitSelected(force: force) })
+        updateQuitSelectedItems()
 
         menu.addItem(.separator())
         for app in apps {
             let item = NSMenuItem(title: app.localizedName ?? "", action: nil, keyEquivalent: "")
-            item.view = AppRowView(app: app, selected: quitter.isSelected(app),
+            item.view = AppRowView(app: app, selected: quitter.isSelected(app), excluded: quitter.isExcluded(app),
                                    onToggle: { [weak self] selected in
                                        self?.quitter.setSelected(selected, for: app)
-                                       self?.updateQuitSelectedItem()
+                                       self?.updateQuitSelectedItems()
                                    },
-                                   onQuit: { [weak menu, quitter] in
+                                   onQuit: { [weak menu, quitter] force in
                                        menu?.cancelTracking()
-                                       quitter.quit([app])
+                                       quitter.quit([app], force: force)
                                    })
             menu.addItem(item)
         }
     }
 
-    private func updateQuitSelectedItem() {
+    @discardableResult
+    private func addPair(to menu: NSMenu, symbol: String, enabled: Bool, title: (Bool) -> String,
+                         action: @escaping (Bool) -> Void) -> [(item: NSMenuItem, force: Bool)] {
+        [false, true].map { force in
+            let item = ActionMenuItem(title(force), symbol: force ? "bolt.circle" : symbol, enabled: enabled) {
+                action(force)
+            }
+            if force {
+                item.keyEquivalentModifierMask = [.option]
+                item.isAlternate = true
+            }
+            menu.addItem(item)
+            return (item, force)
+        }
+    }
+
+    private func updateQuitSelectedItems() {
         let count = quitter.selection.count
-        quitSelectedItem?.title = L10n.format("Thoát %ld ứng dụng đã chọn", count)
-        quitSelectedItem?.isEnabled = count > 0
+        for (item, force) in quitSelectedItems {
+            item.title = L10n.format(force ? "Buộc thoát %ld ứng dụng đã chọn" : "Thoát %ld ứng dụng đã chọn", count)
+            item.isEnabled = count > 0
+        }
     }
 }
 
 /// A running-app row. Clicking the row ticks the app for "quit selected" and keeps the menu
-/// open; only the explicit Quit button closes that app.
+/// open; only the explicit Quit button closes that app (or force quits it while ⌥ is held).
 private final class AppRowView: NSView {
     private let checkbox: NSButton
     private let label: NSTextField
     private let quitButton: NSButton
     private let onToggle: (Bool) -> Void
-    private let onQuit: () -> Void
+    private let onQuit: (Bool) -> Void
+    private var flagsMonitor: Any?
     private var highlighted = false {
         didSet { needsDisplay = true }
     }
 
-    init(app: NSRunningApplication, selected: Bool,
-         onToggle: @escaping (Bool) -> Void, onQuit: @escaping () -> Void) {
+    init(app: NSRunningApplication, selected: Bool, excluded: Bool,
+         onToggle: @escaping (Bool) -> Void, onQuit: @escaping (Bool) -> Void) {
         self.onToggle = onToggle
         self.onQuit = onQuit
         let name = app.localizedName ?? app.bundleIdentifier ?? "?"
@@ -86,11 +112,19 @@ private final class AppRowView: NSView {
         quitButton.target = self
         quitButton.action = #selector(quitClicked)
         quitButton.setAccessibilityLabel(L10n.format("Thoát %@", name))
+        if excluded { label.toolTip = L10n.tr("Thoát tất cả luôn bỏ qua ứng dụng này") }
 
         let iconView = NSImageView(image: app.icon ?? NSImage())
         iconView.imageScaling = .scaleProportionallyUpOrDown
         label.font = .menuFont(ofSize: 0)
         label.lineBreakMode = .byTruncatingTail
+        if excluded, let pin = NSImage(systemSymbolName: "pin.fill", accessibilityDescription: nil) {
+            let attachment = NSTextAttachment()
+            attachment.image = pin
+            let text = NSMutableAttributedString(string: name + "  ", attributes: [.font: label.font as Any])
+            text.append(NSAttributedString(attachment: attachment))
+            label.attributedStringValue = text
+        }
         label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         for view in [checkbox, iconView, label, quitButton] as [NSView] {
@@ -116,9 +150,22 @@ private final class AppRowView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        if let flagsMonitor { NSEvent.removeMonitor(flagsMonitor) }
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         highlighted = false
+        if let flagsMonitor { NSEvent.removeMonitor(flagsMonitor) }
+        flagsMonitor = nil
+        if window != nil {
+            updateQuitTitle(force: NSEvent.modifierFlags.contains(.option))
+            flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+                self?.updateQuitTitle(force: event.modifierFlags.contains(.option))
+                return event
+            }
+        }
         trackingAreas.forEach(removeTrackingArea)
         addTrackingArea(NSTrackingArea(rect: .zero,
                                        options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
@@ -144,7 +191,12 @@ private final class AppRowView: NSView {
     }
 
     @objc private func quitClicked() {
-        onQuit()
+        onQuit(NSEvent.modifierFlags.contains(.option))
+    }
+
+    private func updateQuitTitle(force: Bool) {
+        quitButton.title = force ? L10n.tr("Buộc thoát") : L10n.tr("Thoát")
+        quitButton.contentTintColor = force ? .systemRed : nil
     }
 
     override func draw(_ dirtyRect: NSRect) {

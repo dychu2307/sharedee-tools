@@ -1,6 +1,8 @@
-# Sharedee Tools
+# Sharedee Tools — free macOS screenshot, disk cleaner & app uninstaller
 
-[Tiếng Việt](README.vi.md)
+**Open-source menu bar toolbox for Mac:** screenshot and scrolling capture with annotation and OCR, a disk cleaner, an app uninstaller that removes leftovers, and quit-all apps. Native Swift, Apple Silicon and Intel, macOS 12+. A free alternative to CleanShot X, CleanMyMac and QuitAll.
+
+**[Download the latest release](https://github.com/dychu2307/sharedee-tools/releases/latest)** · [Tiếng Việt](README.vi.md)
 
 Sharedee Tools is a free, native macOS toolbox that lives in the menu bar and a main tools window: capture and annotate screenshots, quit apps in bulk, clean up disk space, and uninstall apps with their leftovers. The source code is available under the [Apache License 2.0](LICENSE).
 

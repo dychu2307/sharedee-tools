@@ -1,6 +1,8 @@
-# Sharedee Tools
+# Sharedee Tools — chụp màn hình, dọn dẹp và gỡ ứng dụng miễn phí cho macOS
 
-[English](README.md)
+**Bộ công cụ mã nguồn mở trên thanh menu cho Mac:** chụp màn hình, chụp cuộn kèm chú thích và nhận dạng chữ (OCR), dọn dẹp ổ đĩa, gỡ ứng dụng kèm file sót lại, thoát nhiều ứng dụng cùng lúc. Viết bằng Swift, chạy trên Apple Silicon và Intel, macOS 12 trở lên. Lựa chọn miễn phí thay cho CleanShot X, CleanMyMac và QuitAll.
+
+**[Tải bản mới nhất](https://github.com/dychu2307/sharedee-tools/releases/latest)** · [English](README.md)
 
 Bộ công cụ cho macOS 12 trở lên, chạy trên thanh menu và trong một cửa sổ chính: chụp và chú thích ảnh màn hình, thoát nhiều ứng dụng cùng lúc, dọn dẹp dung lượng ổ đĩa, gỡ ứng dụng kèm file sót lại. Hỗ trợ cả máy Mac dùng chip Intel (x86_64) và Apple Silicon (arm64). Mở `Sharedee Tools.app` để dùng ngay hoặc mở `SharedeCapture.xcodeproj` để chỉnh sửa bằng Xcode. Khi khởi động, app mở cửa sổ chính và đồng thời chạy trên thanh menu. Sidebar liệt kê các công cụ (Chụp ảnh, Thoát ứng dụng, Dọn dẹp, Gỡ ứng dụng); menu trên thanh menu có một submenu cho mỗi công cụ. Đóng cửa sổ chính không thoát app; chọn **Mở Sharedee Tools** trên thanh menu để mở lại.
 

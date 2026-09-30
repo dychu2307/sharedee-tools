@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 @testable import SharedeCapture
 
@@ -124,6 +125,22 @@ final class CleanupScannerTests: XCTestCase {
     func testRemoveReportsFailureInsteadOfThrowing() async {
         let removed = await CleanupScanner.remove(url("Library/Caches/missing"), permanently: true)
         XCTAssertFalse(removed)
+    }
+
+    @MainActor
+    func testRunningAppsAreFoundOnlyForSelectedCaches() {
+        // The test host is itself a running app, so its cache folder stands in for any app's.
+        let current = NSRunningApplication.current
+        let ownCache = CleanupItem(url: url("Library/Caches/\(current.bundleIdentifier ?? "")"), size: 1)
+        let otherCache = CleanupItem(url: url("Library/Caches/com.example.other"), size: 1)
+        let category = CleanupCategory(kind: .userCaches, items: [ownCache, otherCache])
+        let model = CleanupModel()
+
+        model.selection = [otherCache.url]
+        XCTAssertTrue(model.runningOwners(of: category, among: [current]).isEmpty)
+
+        model.selection = [ownCache.url, otherCache.url]
+        XCTAssertEqual(model.runningOwners(of: category, among: [current]), [current])
     }
 
     // MARK: Helpers

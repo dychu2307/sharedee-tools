@@ -4,6 +4,7 @@ import SwiftUI
 /// The Cleanup page of the main window: scan → review → clean, with an animated ring hero.
 struct CleanupView: View {
     @EnvironmentObject private var model: CleanupModel
+    @EnvironmentObject private var quitter: AppQuitter
     let accent: Color
     let muted: Color
     @State private var expanded: Set<CleanupKind> = []
@@ -13,6 +14,10 @@ struct CleanupView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 28) {
+            if let disk = model.disk {
+                DiskUsageBar(disk: disk, reclaimable: model.phase == .results ? model.selectedSize : 0,
+                             muted: muted)
+            }
             hero
                 .frame(maxWidth: .infinity)
             if model.phase != .idle {
@@ -21,6 +26,7 @@ struct CleanupView: View {
             }
         }
         .animation(.easeInOut(duration: 0.35), value: model.phase)
+        .onAppear { model.refreshDisk() }
     }
 
     // MARK: Hero
@@ -195,6 +201,9 @@ struct CleanupView: View {
                         .foregroundStyle(muted)
                         .lineLimit(1)
                 }
+                if reviewing, let category {
+                    runningWarning(model.runningOwners(of: category, among: quitter.apps))
+                }
             }
             Spacer(minLength: 12)
             trailing(kind: kind, category: category)
@@ -240,6 +249,22 @@ struct CleanupView: View {
                 .monospacedDigit()
                 .foregroundStyle(category.items.isEmpty ? muted : .white)
                 .transition(.scale.combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder
+    private func runningWarning(_ apps: [NSRunningApplication]) -> some View {
+        if !apps.isEmpty {
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                Text(L10n.format("Đang chạy: %@", apps.compactMap(\.localizedName).joined(separator: ", ")))
+                    .lineLimit(1)
+                Button(L10n.tr("Thoát trước khi dọn")) { quitter.quit(apps) }
+                    .buttonStyle(.link)
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(.orange)
+            .transition(.opacity)
         }
     }
 
@@ -308,6 +333,54 @@ struct CleanupView: View {
 }
 
 // MARK: - Animated pieces
+
+/// How full the startup disk is, with the space the current selection would free shown as a
+/// lighter tail on the used bar.
+private struct DiskUsageBar: View {
+    let disk: DiskUsage
+    let reclaimable: Int64
+    let muted: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Label(disk.name, systemImage: "internaldrive")
+                    .font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text(L10n.format("Đã dùng %@ / %@", ByteCountText.format(disk.used), ByteCountText.format(disk.total)))
+                    .font(.system(size: 11, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(muted)
+            }
+            GeometryReader { proxy in
+                let total = max(1, Double(disk.total))
+                let used = Double(disk.used) / total
+                let freeable = min(Double(reclaimable), Double(disk.used)) / total
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.07))
+                    Capsule()
+                        .fill(ToolStyle.gradient)
+                        .frame(width: proxy.size.width * used)
+                    Capsule()
+                        .fill(.white.opacity(0.55))
+                        .frame(width: proxy.size.width * freeable)
+                        .offset(x: proxy.size.width * (used - freeable))
+                        .opacity(freeable > 0 ? 1 : 0)
+                }
+            }
+            .frame(height: 8)
+            if reclaimable > 0 {
+                Text(L10n.format("Dọn phần đã chọn sẽ trống thêm %@", ByteCountText.format(reclaimable)))
+                    .font(.system(size: 11))
+                    .foregroundStyle(muted)
+                    .transition(.opacity)
+            }
+        }
+        .padding(14)
+        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+        .animation(.easeInOut(duration: 0.4), value: reclaimable)
+    }
+}
 
 /// Colours shared by the tool pages' hero animations and primary buttons.
 enum ToolStyle {

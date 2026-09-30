@@ -53,6 +53,14 @@ enum CleanupKind: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Apps whose data lives in this kind even though the items aren't named after them.
+    var ownerBundleIDs: Set<String> {
+        switch self {
+        case .xcode: ["com.apple.dt.xcode", "com.apple.iphonesimulator"]
+        default: []
+        }
+    }
+
     var deletesPermanently: Bool { self != .largeFiles }
     var selectedByDefault: Bool { self != .trash && self != .largeFiles }
 }
@@ -63,6 +71,13 @@ struct CleanupItem: Identifiable, Hashable {
     var id: URL { url }
     var name: String { FileManager.default.displayName(atPath: url.path) }
     var displayPath: String { (url.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath }
+}
+
+struct DiskUsage: Equatable {
+    let name: String
+    let total: Int64
+    let available: Int64
+    var used: Int64 { max(0, total - available) }
 }
 
 struct CleanupCategory: Identifiable {
@@ -88,6 +103,7 @@ final class CleanupModel: ObservableObject {
     @Published private(set) var freed: Int64 = 0
     @Published private(set) var cleanProgress: Double = 0
     @Published private(set) var failedCount = 0
+    @Published private(set) var disk: DiskUsage?
     private var task: Task<Void, Never>?
 
     var isBusy: Bool { phase == .scanning || phase == .cleaning }
@@ -175,7 +191,36 @@ final class CleanupModel: ObservableObject {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 phase = .done
             }
+            refreshDisk()
         }
+    }
+
+    func refreshDisk() {
+        Task {
+            let usage = await Self.readDiskUsage()
+            withAnimation(.easeInOut(duration: 0.6)) { disk = usage }
+        }
+    }
+
+    /// Running apps whose data is selected for cleaning in this category. Clearing a cache
+    /// under a running app can lose what it is doing, so the page suggests quitting them first.
+    func runningOwners(of category: CleanupCategory, among running: [NSRunningApplication]) -> [NSRunningApplication] {
+        let selectedNames = Set(category.items.filter { selection.contains($0.url) }
+            .map { $0.url.lastPathComponent.lowercased() })
+        guard !selectedNames.isEmpty else { return [] }
+        return running.filter { app in
+            guard let id = app.bundleIdentifier?.lowercased() else { return false }
+            return selectedNames.contains(id) || category.kind.ownerBundleIDs.contains(id)
+        }
+    }
+
+    nonisolated private static func readDiskUsage() async -> DiskUsage? {
+        let keys: Set<URLResourceKey> = [.volumeLocalizedNameKey, .volumeTotalCapacityKey,
+                                         .volumeAvailableCapacityForImportantUsageKey]
+        guard let values = try? FileManager.default.homeDirectoryForCurrentUser.resourceValues(forKeys: keys),
+              let total = values.volumeTotalCapacity,
+              let available = values.volumeAvailableCapacityForImportantUsage else { return nil }
+        return DiskUsage(name: values.volumeLocalizedName ?? "Macintosh HD", total: Int64(total), available: available)
     }
 
     func reset() {

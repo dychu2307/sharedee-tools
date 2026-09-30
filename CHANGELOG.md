@@ -4,6 +4,22 @@ All notable changes to Sharedee Tools are documented here. The project follows
 [Semantic Versioning](https://semver.org) and [Conventional Commits](https://www.conventionalcommits.org);
 new sections are added by `scripts/release.sh`.
 
+## 1.2.0 - 2026-09-30
+
+### Features
+
+- force quit with ⌥, pinned apps, and quit all but current
+- find installers, stale node_modules and device backups
+- warn about running apps and show disk usage
+- add an app uninstaller that also removes leftovers
+- group the menu by tool and add Quit Apps and Cleanup
+
+### Other changes
+
+- describe the Quit Apps, Cleanup and Uninstall tools
+- give Debug builds their own bundle ID
+- cover what the cleanup scanner picks up
+
 ## 1.1.0 - 2026-09-30
 
 ### Features
